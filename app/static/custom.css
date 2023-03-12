@@ -1,0 +1,42 @@
+body {
+    padding: 5%;
+    margin: 5%;
+    background-color: #202020;
+}
+h1 {
+    color: #F3110C;
+    text-align: center;
+}
+form {
+    margin: auto;
+    background-color: white;
+    padding: 5%;
+    text-align: center;
+    border: .1em double #F3110C;
+}
+input {
+    margin-top: 10%;
+    margin-bottom: 2.5%;
+    width: 25%;
+    height: 2em;
+}
+button {
+    margin: auto;
+    padding: 1.5%;
+    background-color: #F3110C;
+    color: white;
+    display: block;
+    margin-bottom: 1.5%;
+}
+#decimal {
+    text-align: center;
+    text-decoration: underline;
+    font-weight: bold;
+    color: #F3110C;
+    font-size: 2em;
+    background-color: white;
+    padding: 2.5%;
+    border: .1em double #F3110C;
+}
+
+
