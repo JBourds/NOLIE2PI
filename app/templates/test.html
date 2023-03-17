@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}
+Polygraph Test
+{% endblock %}
+{% block content %}
+<section>
+    <h2>Polygraph Test</h2>
+    <select class="custom-select">
+      <option selected>Open this select menu</option>
+      {% for user in users %}
+        <option value="{{ user[0] }}">{{ user[1] }}</option>
+    {% endfor %}
+    </select>
+</section>
+{% endblock %}
