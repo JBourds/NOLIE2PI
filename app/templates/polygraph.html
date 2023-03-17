@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}
+Polygraph Test
+{% endblock %}
+
+{% block content %}
+<h2 class="mb-3">Polygraph Test</h2>
+<section id="select-user" class="my-4">
+  <p class="mb-2">Select a user to test:</p>
+  <select class="custom-select mb-4">
+    <option selected>Open this select menu</option>
+    {% for user in users %}
+      <option value="{{ user[0] }}">{{ user[1] }}</option>
+    {% endfor %}
+  </select>
+</section>
+
+<section id="polygraph">
+  <button id="new-test" class="btn btn-success mr-2 mb-4">New Test</button>
+
+  <div id="questions" class="my-4">
+    <button id="add-question" class="btn btn-success mr-2">Add Question</button>
+    <input type="text" id="new-question" placeholder="Type question here then hit the 'Add Question' button" class="form-control mt-2 mr-2">
+    <select id="select-question" class="custom-select mt-2 mr-2"></select>
+    <button id="delete-question" class="btn mt-2 btn-danger">Delete Question</button>
+  </div>
+
+  <button id="start-recording" class="btn btn-success mr-2 mb-4">Start Recording</button>
+  <button id="stop-recording" class="btn btn-danger mr-2 mb-4">Stop Recording</button>
+  <div id="gsr-data" class="my-4"></div>
+  <div id="bp-data" class="my-4"></div>
+  <div id="hr-data" class="my-4"></div>
+
+  <button id="end-test" class="btn btn-danger mt-4">End Test</button>
+</section>
+
+{% endblock %}
