@@ -1,7 +1,7 @@
 import math
 import sys
 import time
-from grove.adc import ADC
+from lib.grove.grove.adc import ADC
 
 class GroveGSRSensor:
 

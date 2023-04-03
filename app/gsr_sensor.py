@@ -1,4 +1,4 @@
-from lib.grove.grove_gsr_sensor import GroveGSRSensor
+from grove_gsr_sensor import GroveGSRSensor
 
 # Initialize the GSR sensor to its default channel (0)
 sensor = GroveGSRSensor(0)

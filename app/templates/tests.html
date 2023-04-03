@@ -5,12 +5,12 @@ Past Tests
 
 {% block content %}
 <h2 class="mb-3">Past Tests</h2>
-<section id="select-user" class="my-4">
+<section class="my-4">
   <p class="mb-2">Select user:</p>
-  <select class="custom-select mb-4">
-    <option selected>Open this select menu</option>
-    {% for user_id in tests.users %}
-      <option value="{{ user_id }}">{{ tests.user_id.name }}</option>
+  <select id="select-user" class="custom-select mb-4">
+    <option value="0" selected>Open this select menu</option>
+    {% for user_id, user_data in users.items() %}
+      <option value="{{ user_id }}">{{ user_data['name'] }}</option>
     {% endfor %}
   </select>
 </section>
@@ -19,8 +19,8 @@ Past Tests
   <p class="mb-2">Select test:</p>
   <select class="custom-select mb-4">
     <option selected>Open this select menu</option>
-    {% for user in users %}
-      <option value="{{ user[0] }}">{{ user[1] }}</option>
+    {% for user_id in users %}
+      <option value="{{ user_id }}">{{ users[user_id]['name'] }}</option>
     {% endfor %}
   </select>
 </section>
