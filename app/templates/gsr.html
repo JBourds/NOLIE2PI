@@ -7,27 +7,60 @@ GSR Testing
 <h2 class="mb-3">GSR Test</h2>
 
 <main role="main" class="container">
-    <input type="hidden" id="test-active" name="test-active" value="0">
-  <button id="start-test" class="btn btn-success mr-2 mb-4" onclick="startTestReadings()">Start Test</button>
-  <button id="stop-test" class="btn btn-danger mr-2 mb-4" onclick="stopTestReadings()">Stop Test</button>
 
-    <div class="form-group">
+
+
+    <div id="users" class="form-group">
         <label for="user" class="col-form-label mb-2">New User:</label>
         <input type="text" id="user" name="user" class="form-control mt-2 mr-2">
+
         <button id="add-user" class="btn btn-success mr-2 mb-4" onclick="addUser()">Add User</button>
+
+        <!-- TODO: Implement delUser() function -->
+        <button id="delete-user" class="btn btn-danger mr-2 mb-4" onclick="delUser()">Delete User</button>
 
         <label for="select-user" class="col-form-label mb-2">Select user:</label>
         <select id="select-user" class="custom-select mb-4">
             <option value="0" selected>Open this select menu</option>
             {% for user_id, user_data in users.items() %}
-              <option value="{{ user_id }}">{{ user_data['name'] }}</option>
+              <option id="user-{{ user_id }}" value="{{ user_id }}">{{ user_data['name'] }}</option>
             {% endfor %}
+        </select>
+
+        <input type="hidden" id="user-id" name="user-id" value="0">
+    </div>
+
+    <!-- TODO: Implement addTest and delTest functions -->
+    <div id="tests" class="form-group">
+        <input type="hidden" id="test-active" name="test-active" value="0">
+        <input type="hidden" id="test-id" name="test-id" value="0">
+
+        <!-- Test controls -->
+        <button id="add-test" class="btn btn-success mr-2 mb-4" onclick="addTest()">Add Test</button>
+        <button id="delete-test" class="btn btn-danger mr-2 mb-4" onclick="delTest()">Delete Test</button>
+
+        <label for="select-test">Select Test:</label>
+        <select id="select-test" class="custom-select mb-4">
+            <option value="0" selected>Open this select menu</option>
         </select>
     </div>
 
-    <div class="form-group">
+  <button id="start-reading" class="btn btn-success mr-2 mb-4" onclick="startTestReadings()">Start Readings</button>
+  <button id="stop-reading" class="btn btn-danger mr-2 mb-4" onclick="stopTestReadings()">Stop Readings</button>
+
+    <div id="test-question" class="form-group">
         <label for="question" class="col-form-label">Question:</label>
         <input type="text" id="question" name="question" class="form-control mt-2 mr-2">
+        <input type="hidden" id="question-id" name="question-id" value="0">
+
+        <!-- TODO: Implement addQuestion() and delQuestion() functions -->
+        <button id="add-question" class="btn btn-success mr-2 mb-4" onclick="addQuestion()">Add Question</button>
+        <button id="delete-question" class="btn btn-danger mr-2 mb-4" onclick="delQuestion()">Delete Question</button>
+
+        <label for="select-test">Select Question:</label>
+        <select id="select-question" class="custom-select mb-4">
+            <option value="0" selected>Open this select menu</option>
+        </select>
     </div>
 
 

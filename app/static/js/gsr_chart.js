@@ -29,7 +29,6 @@ function get_gsr_data(callback, since) {
 }
 
 var latest_timestamp = "0";
-// var latest_timestamp = new Date().toISOString();
 
 function get_new_gsr_data(callback) {
     get_gsr_data(function(gsrs) {
@@ -115,6 +114,6 @@ function update() {
 $(document).ready(function() {
     var ctx = document.getElementById("gsr_chart").getContext('2d');
     create_gsr_chart(ctx);
-    update();
-    setInterval(update, 1000);
+    // update();
+    // setInterval(update, 1000);
 });

@@ -1,14 +1,12 @@
 import datetime
 
-from chartjs import *
-
 from constants import *
 from DateTimeEncoder import DateTimeEncoder
 from flask import Flask, jsonify, render_template, request
 from flask_bootstrap import Bootstrap
 from grove_gsr_sensor import GroveGSRSensor
 import json
-from lib.max30102 import max30102
+from lib.max_sensor import max30102
 import logging
 import mysql.connector
 import time
@@ -21,9 +19,13 @@ log = logging.getLogger('werkzeug')
 log.disabled = True
 
 # Global variables to control sensors
-read_blood_pressure = False
+
+# Galvanic Skin Response / Skin Conductivity
 read_gsr = False
-read_heart_rate = False
+# Heart Rate
+read_hr = False
+# Blood oxygen saturation levels
+read_spo2 = False
 
 # Debug switch
 DEBUG_SQL = False
@@ -123,13 +125,13 @@ def fetch_users():
                 question_text = question_record[1]
                 question_pass = question_record[2]
 
-                select_blood_pressure = """SELECT bp_id, question_id, reading, timestamp FROM BP_Data WHERE question_id = %s;"""
+                select_spo2 = """SELECT spo2_id, question_id, reading, timestamp FROM SPO2_Data WHERE question_id = %s;"""
                 select_gsr = """SELECT gsr_id, question_id, reading, timestamp FROM GSR_Data WHERE question_id = %s;"""
                 select_heart_rate = """SELECT hr_id, question_id, reading, timestamp FROM HR_Data WHERE question_id = %s;"""
                 args = (question_id,)
 
                 # retrieve data for this question
-                cursor.execute(select_blood_pressure, args)
+                cursor.execute(select_spo2, args)
                 if DEBUG_SQL:
                     print(cursor.statement)
                 bp_records = cursor.fetchall()
@@ -186,9 +188,9 @@ def fetch_users():
 
 @app.route('/stop_reading', methods=['POST'])
 def stop_reading():
-    globals()['read_blood_pressure'] = False
     globals()['read_gsr'] = False
-    globals()['read_heart_rate'] = False
+    globals()['read_hr'] = False
+    globals()['read_spo2'] = False
 
     print("Stopped reading!")
     return ""
@@ -199,9 +201,9 @@ def start_reading():
     data = request.get_json()
     user_id = data['user_id']
     question = data['question']
-    globals()['read_blood_pressure'] = True
     globals()['read_gsr'] = True
-    globals()['read_heart_rate'] = True
+    globals()['read_hr'] = True
+    globals()['read_spo2'] = True
 
     database = mysql.connector.connect(
         host=DATABASE_HOST,
@@ -212,14 +214,14 @@ def start_reading():
     test_id = create_test(user_id)
     question_id = create_question(test_id, question)
 
-    # max30102_sensor = max30102.MAX30102()
+    max30102_sensor = max30102.MAX30102()
     gsr_sensor = GroveGSRSensor(0)
 
     print("Started reading!")
     while globals()['read_gsr']:
-        # insert_blood_pressure_data(database, max30102_sensor, question_id)
         insert_gsr_data(gsr_sensor, question_id)
         # insert_heart_rate_data(database, max30102_sensor, question_id)
+        # insert_sp02_data(database, max30102_sensor, question_id)
         time.sleep(1)
 
     return "Stopped reading"
@@ -241,11 +243,6 @@ def create_user(user):
     )
     cursor = database.cursor()
 
-    # Testing
-    select_all_users = """SELECT * FROM Users;"""
-    cursor.execute(select_all_users)
-    print(cursor.fetchall())
-
     insert_user = """INSERT INTO Users (name) VALUES (%s);"""
 
     args = (user,)
@@ -260,16 +257,60 @@ def create_user(user):
 
     data = cursor.fetchall()
 
-    cursor.execute(select_all_users)
-    print(cursor.fetchall())
+    cursor.close()
+    database.commit()
+    database.close()
+
+    if data != []:
+        # Return the user_id
+        return data[0][0]
+    else:
+        return 0
+
+@app.route("/delete_user", methods=['POST'])
+def delete_user():
+    data = request.get_json()
+    user = data['user']
+    return delete_user(user)
+
+# Returns user_id of newly created user
+def delete_user(user):
+
+    database = mysql.connector.connect(
+        host=DATABASE_HOST,
+        user=DATABASE_USER,
+        passwd=DATABASE_PASSWORD,
+        database=DATABASE_NAME
+    )
+    cursor = database.cursor()
+
+    # Attempt to delete the user
+    delete_user = """DELETE FROM Users WHERE user_id=%s;"""
+    args = (user,)
+    cursor.execute(delete_user, args)
+
+    # Verify the user is no longer there
+    select_user = """SELECT name FROM Users WHERE user_id=%s;""";
+    cursor.execute(select_user, args)
+
+    # User was deleted successfully
+    if cursor.fetchall() == []:
+        delete_successful = True
+    else:
+        delete_successful = False
+
+    if globals()['DEBUG_SQL']:
+        print(cursor.statement)
 
     cursor.close()
     database.commit()
     database.close()
 
+    if delete_successful:
+        return "Succeeded"
+    else:
+        return "Failed"
 
-    # Return the user_id
-    return data[0][0]
 
 # Attempts to create a new test if one doesn't already exist
 # Returns either the existing test_id or the newly returned one
@@ -334,7 +375,7 @@ def create_question(test_id, question):
     return question_id
 
 # To be implemented
-def insert_blood_pressure_data(max30102_sensor, question_id):
+def insert_spo2_data(max30102_sensor, question_id):
     return
 
 

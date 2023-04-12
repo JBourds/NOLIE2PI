@@ -1,4 +1,4 @@
-from lib.max30102 import hrcalc, max30102
+from lib.max_sensor import hrcalc, max30102
 
 m = max30102.MAX30102()
 

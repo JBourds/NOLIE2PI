@@ -70,6 +70,11 @@ function addUser() {
         if (xhr.readyState === XMLHttpRequest.DONE && xhr.status === 200) {
           let response = JSON.parse(xhr.responseText);
           console.log(response);
+          if (response.user_id != 0) {
+              alert("User successfully created!");
+          } else {
+              alert("User failed to be created!");
+          }
           // Add user to select box
           let user_select = document.getElementById("select-user")
           user_select.innerHTML += '<option value="' + response.user_id + '" selected>' + user + '</option>';
@@ -80,4 +85,40 @@ function addUser() {
       xhr.send(JSON.stringify({user: user}));
   }
 
+}
+
+function delUser() {
+    let selected_user = document.getElementById("select-user").value;
+    let entered_user = document.getElementById("user").value;
+
+    // Don't allow user to enter a user's name to delete them
+    if (entered_user != "" || selected_user == 0) {
+        alert("Cannot only delete users from select list");
+        document.getElementById("user").value = "";
+    } else {
+        let xhr = new XMLHttpRequest();
+        xhr.open("POST", "/delete_user", true);
+        xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === XMLHttpRequest.DONE && xhr.status === 200) {
+              let response = xhr.responseText;
+              if (response == "Succeeded") {
+                  alert("Successfully deleted user!");
+              } else {
+                  alert("Failed to delete user!");
+              }
+              // console.log(response);
+              // Delete user from select box
+              document.getElementById("user-" + selected_user).remove();
+        }
+      };
+      // Send selected user's ID
+      json_object = JSON.stringify({user: selected_user});
+      // Debugging
+        /*
+      console.log(selected_user);
+      console.log(json_object);
+      */
+      xhr.send(json_object);
+    }
 }
