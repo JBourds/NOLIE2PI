@@ -16,12 +16,11 @@ GSR Testing
 
         <button id="add-user" class="btn btn-success mr-2 mb-4" onclick="addUser()">Add User</button>
 
-        <!-- TODO: Implement delUser() function -->
         <button id="delete-user" class="btn btn-danger mr-2 mb-4" onclick="delUser()">Delete User</button>
 
         <label for="select-user" class="col-form-label mb-2">Select user:</label>
         <select id="select-user" class="custom-select mb-4">
-            <option value="0" selected>Open this select menu</option>
+            <option id="default-user" value="0" selected>Open this select menu</option>
             {% for user_id, user_data in users.items() %}
               <option id="user-{{ user_id }}" value="{{ user_id }}">{{ user_data['name'] }}</option>
             {% endfor %}
@@ -30,23 +29,21 @@ GSR Testing
         <input type="hidden" id="user-id" name="user-id" value="0">
     </div>
 
-    <!-- TODO: Implement addTest and delTest functions -->
     <div id="tests" class="form-group">
         <input type="hidden" id="test-active" name="test-active" value="0">
         <input type="hidden" id="test-id" name="test-id" value="0">
 
         <!-- Test controls -->
         <button id="add-test" class="btn btn-success mr-2 mb-4" onclick="addTest()">Add Test</button>
+        <button id="complete-test" class="btn btn-primary mr-2 mb-4" onclick="completeTest()">Complete Test</button>
         <button id="delete-test" class="btn btn-danger mr-2 mb-4" onclick="delTest()">Delete Test</button>
 
         <label for="select-test">Select Test:</label>
         <select id="select-test" class="custom-select mb-4">
-            <option value="0" selected>Open this select menu</option>
+            <option id="default-test" value="0" selected>Open this select menu</option>
         </select>
     </div>
 
-  <button id="start-reading" class="btn btn-success mr-2 mb-4" onclick="startTestReadings()">Start Readings</button>
-  <button id="stop-reading" class="btn btn-danger mr-2 mb-4" onclick="stopTestReadings()">Stop Readings</button>
 
     <div id="test-question" class="form-group">
         <label for="question" class="col-form-label">Question:</label>
@@ -59,8 +56,12 @@ GSR Testing
 
         <label for="select-test">Select Question:</label>
         <select id="select-question" class="custom-select mb-4">
-            <option value="0" selected>Open this select menu</option>
+            <option id="default-question" value="0" selected>Open this select menu</option>
         </select>
+
+        <!-- Controls to start/stop test readings -->
+        <button id="start-reading" class="btn btn-success mr-2 mb-4" onclick="startTestReadings()">Start Readings</button>
+        <button id="stop-reading" class="btn btn-danger mr-2 mb-4" onclick="stopTestReadings()">Stop Readings</button>
     </div>
 
 

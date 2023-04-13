@@ -311,6 +311,11 @@ def delete_user(user):
     else:
         return "Failed"
 
+@app.route('/create_test', methods=['POST'])
+def create_test():
+    data = request.get_json()
+    user_id = data['user_id']
+    return jsonify(test_id=create_test(user_id))
 
 # Attempts to create a new test if one doesn't already exist
 # Returns either the existing test_id or the newly returned one
@@ -349,6 +354,43 @@ def create_test(user_id):
     database.commit()
     database.close()
     return test_id
+
+@app.route('/delete_test', methods=['POST'])
+def delete_test():
+    data = request.get_json()
+    test_id = data['test_id']
+    return jsonify(rows_deleted=delete_test(test_id))
+
+def delete_test(test_id):
+    database = mysql.connector.connect(
+        host=DATABASE_HOST,
+        user=DATABASE_USER,
+        passwd=DATABASE_PASSWORD,
+        database=DATABASE_NAME
+    )
+    cursor = database.cursor()
+    date = datetime.date.today()
+
+    # Check if test already exists for this user and date
+    delete_test = """DELETE FROM Tests WHERE test_id = %s AND date = %s;"""
+    args = (test_id, date,)
+    cursor.execute(delete_test, args)
+    rows_deleted = cursor.rowcount
+    if globals()['DEBUG_SQL']:
+        print(cursor.statement)
+
+
+    cursor.close()
+    database.commit()
+    database.close()
+    return rows_deleted
+
+@app.route('/create_question', methods=['POST'])
+def create_question():
+    data = request.get_json()
+    test_id = data['test_id']
+    question_text = data['question']
+    return create_question(test_id, question_text)
 
 # Creates a question for a test and then returns the question id
 def create_question(test_id, question):
