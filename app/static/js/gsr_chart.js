@@ -9,8 +9,18 @@ function displayQuestionData() {
     // Clear canvas
     ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
     create_gsr_chart(ctx);
-    update(question_id);
+    update();
     setInterval(update, 1000);
+}
+
+// Doesn't update every second
+function displayPastQuestionData() {
+    question_id = document.getElementById("question-id");
+    var ctx = document.getElementById("gsr_chart").getContext('2d');
+    // Clear canvas
+    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+    create_gsr_chart(ctx);
+    update();
 }
 
 function get_gsr_data(callback, since) {
