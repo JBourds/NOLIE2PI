@@ -1,3 +1,17 @@
+// Global variables used to control the data
+var latest_timestamp = "0";
+var question_id = 0;
+
+// Function used to update the question_id variable and update graph display
+function displayQuestionData() {
+    question_id = document.getElementById("question-id");
+    var ctx = document.getElementById("gsr_chart").getContext('2d');
+    // Clear canvas
+    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+    create_gsr_chart(ctx);
+    update(question_id);
+    setInterval(update, 1000);
+}
 
 function get_gsr_data(callback, since) {
     var data = {};
@@ -27,8 +41,6 @@ function get_gsr_data(callback, since) {
         }
     });
 }
-
-var latest_timestamp = "0";
 
 function get_new_gsr_data(callback) {
     get_gsr_data(function(gsrs) {
@@ -91,19 +103,24 @@ function update_gsr_chart() {
 function update() {
     get_new_gsr_data(function(gsrs) {
         for (var i in gsrs) {
+            // Only use the data if it matches the question ID
             var gsr = gsrs[i];
 
-            $("<tr>" +
+            if (gsr.question_id == question_id) {
+                $("<tr>" +
                 "<td>" + gsr.gsr_id + "</td>" +
                 "<td>" + gsr.question_id + "</td>" +
                 "<td>" + gsr.reading + "</td>" +
                 "<td>" + gsr.timestamp + "</td>" +
-            "</tr>").prependTo($("#gsr_tbody"));
+                "</tr>").prependTo($("#gsr_tbody"));
 
-            var date = new Date(gsr.timestamp);
-            var time_label = date.getMonth() + 1 + "/" + date.getDate() + " " + date.getHours() + ":" + date.getMinutes();
+                var date = new Date(gsr.timestamp);
+                var time_label = date.getMonth() + 1 + "/" + date.getDate() + " " + date.getHours() + ":" + date.getMinutes();
 
-            add_gsr_to_chart(gsr.reading, time_label);
+                add_gsr_to_chart(gsr.reading, time_label);
+            }
+
+
         }
         if (gsrs.length > 0) {
             update_gsr_chart();
@@ -112,8 +129,17 @@ function update() {
 }
 
 $(document).ready(function() {
+    // Initialize graphs
+
+    // Create GSR graph
     var ctx = document.getElementById("gsr_chart").getContext('2d');
     create_gsr_chart(ctx);
+
+    // TODO: Create HR & SP02 Graphs
+
+
     // update();
     // setInterval(update, 1000);
+
+
 });

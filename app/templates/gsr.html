@@ -42,6 +42,7 @@ GSR Testing
         <select id="select-test" class="custom-select mb-4">
             <option id="default-test" value="0" selected>Open this select menu</option>
         </select>
+        <button id="show-questions" class="btn btn-warning mr-2 mb-4" onclick="showTestQuestions(document.getElementById('select-test').value)">Show Questions</button>
     </div>
 
 
@@ -49,6 +50,7 @@ GSR Testing
         <label for="question" class="col-form-label">Question:</label>
         <input type="text" id="question" name="question" class="form-control mt-2 mr-2">
         <input type="hidden" id="question-id" name="question-id" value="0">
+        <input type="hidden" id="reading-active" name="reading-active" value="0">
 
         <!-- TODO: Implement addQuestion() and delQuestion() functions -->
         <button id="add-question" class="btn btn-success mr-2 mb-4" onclick="addQuestion()">Add Question</button>

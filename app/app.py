@@ -199,8 +199,7 @@ def stop_reading():
 def start_reading():
     # Read in JSON data to parse the user and question text
     data = request.get_json()
-    user_id = data['user_id']
-    question = data['question']
+    question_id = data['question_id']
     globals()['read_gsr'] = True
     globals()['read_hr'] = True
     globals()['read_spo2'] = True
@@ -211,8 +210,6 @@ def start_reading():
         passwd=DATABASE_PASSWORD,
         database=DATABASE_NAME
     )
-    test_id = create_test(user_id)
-    question_id = create_question(test_id, question)
 
     max30102_sensor = max30102.MAX30102()
     gsr_sensor = GroveGSRSensor(0)
@@ -389,10 +386,11 @@ def delete_test(test_id):
 def create_question():
     data = request.get_json()
     test_id = data['test_id']
-    question_text = data['question']
+    question_text = data['question_text']
     return create_question(test_id, question_text)
 
-# Creates a question for a test and then returns the question id
+# Creates a question for a test and then returns the question id as a JSON object
+# By default, all questions are marked as pass
 def create_question(test_id, question):
     database = mysql.connector.connect(
         host=DATABASE_HOST,
@@ -414,7 +412,35 @@ def create_question(test_id, question):
     cursor.close()
     database.commit()
     database.close()
-    return question_id
+    return jsonify(question_id=question_id)
+
+@app.route('/delete_question', methods=['POST'])
+def delete_question():
+    data = request.get_json()
+    question_id = data['question_id']
+    return jsonify(rows_deleted=delete_question(question_id))
+
+def delete_question(question_id):
+    database = mysql.connector.connect(
+        host=DATABASE_HOST,
+        user=DATABASE_USER,
+        passwd=DATABASE_PASSWORD,
+        database=DATABASE_NAME
+    )
+    cursor = database.cursor()
+    delete_question = """DELETE FROM Test_Questions WHERE question_id=%s"""
+    args = (question_id,)
+    cursor.execute(delete_question, args)
+    if globals()['DEBUG_SQL']:
+        print(cursor.statement)
+
+    rows_deleted = cursor.rowcount
+    cursor.close()
+    database.commit()
+    database.close()
+
+    return rows_deleted
+
 
 # To be implemented
 def insert_spo2_data(max30102_sensor, question_id):

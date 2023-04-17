@@ -1,53 +1,74 @@
 function startTestReadings() {
+    let test_active = document.getElementById("test-active").value;
+    let question_id = document.getElementById("question-id").value;
+    let reading_active = document.getElementById("reading-active");
 
-    let test_active = document.getElementById("test-active");
-    if (test_active.value == 0) {
-        test_active.value = 1;
-
-        var ctx = document.getElementById("gsr_chart").getContext('2d');
-        // Clear canvas
-        ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-        create_gsr_chart(ctx);
-        update();
-        setInterval(update, 1000);
-
-
-        let user_id;
-        let select_user = document.getElementById("select-user").value;
-        let add_user = document.getElementById("user").value;
-        let question = document.getElementById("question").value;
-        if (select_user == 0 && add_user == "") {
-            alert("Must select or enter user. Test NOT started.");
-        } else if (question == "") {
-            alert("Must enter yes/no question for the test.");
-        }
-        // User entered a new user, get their user_id to use
-        if (select_user == 0) {
-            user_id = addUser();
-        } else {
-            user_id = select_user;
-        }
-
-        let xhr = new XMLHttpRequest();
-        xhr.open("POST", "/start_reading");
-        xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
-        xhr.send(JSON.stringify({user_id: user_id, question: question}));
-    } else {
-        alert("Test already active!");
+    // Verify there is a running test
+    if (test_active == 0) {
+        alert("No test to start readings for!");
+        return;
     }
+
+    // Check if there is an active question
+    if (question_id == 0) {
+        alert("No active question to start readings for!");
+        return;
+    }
+
+    // Check if the readings are already active
+    if (reading_active.value == 1) {
+        alert("Readings are already active!");
+        return;
+    }
+
+    // If all the previous conditions work, start the readings and display the data
+    reading_active.value = 1;
+
+    // Update graphs
+    displayQuestionData();
+
+    // Send request to start recording data
+    let xhr = new XMLHttpRequest();
+    xhr.open("POST", "/start_reading");
+    xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+    xhr.send(JSON.stringify({question_id: question_id}));
+
+    alert("Readings started!");
 }
 
 function stopTestReadings() {
-    let test_active = document.getElementById("test-active");
-    if (test_active.value == 1) {
-        test_active.value = 0;
-        let xhr = new XMLHttpRequest();
-        xhr.open("POST", "/stop_reading");
-        xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
-        xhr.send();
-    } else {
-        alert("No test running!");
+    let test_active = document.getElementById("test-active").value;
+    let question_id = document.getElementById("question-id").value;
+    let reading_active = document.getElementById("reading-active");
+
+    // Verify there is a running test
+    if (test_active == 0) {
+        alert("No test to stop readings for!");
+        return;
     }
+
+    // Check if there is an active question
+    if (question_id == 0) {
+        alert("No active question to stop readings for!");
+        return;
+    }
+
+    // Check if the readings are already inactive
+    if (reading_active.value == 0) {
+        alert("Readings are already inactive!");
+        return;
+    }
+
+    // Stop reading
+    reading_active.value = 0;
+
+    // Send request to stop reading
+    let xhr = new XMLHttpRequest();
+    xhr.open("POST", "/stop_reading");
+    xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+    xhr.send();
+
+    alert("Readings stopped!");
 }
 
 function addUser() {
@@ -154,6 +175,8 @@ function addTest() {
                 console.log(test_id);
                 if (test_id != 0) {
                     alert("Test successfully created!");
+                    // Wipe out all questions for previous test
+                    hideQuestions();
                 } else {
                     alert("Test failed to be created!");
                 }
@@ -162,6 +185,10 @@ function addTest() {
                 let test_select = document.getElementById("select-test")
                 test_select.innerHTML += '<option id="test-' + test_id + '" value="' + test_id + '" selected>' + selected_user_name + '</option>';
                 test_select.value = test_id;
+
+                // Update hidden test_id input
+                document.getElementById("test-id").value = test_id;
+
                 // Return the test_id
                 return test_id;
             }
@@ -174,7 +201,7 @@ function addTest() {
 function completeTest() {
     var active_test = document.getElementById("test-active");
 
-    // Stop test
+    // Stop test, don't reset test_id hidden input as it is the last test to be ran
     if (active_test.value == 1) {
         alert("Test completed!");
         active_test.value = 0;
@@ -218,17 +245,141 @@ function delTest() {
             // Delete test from select box
             let test_option = document.getElementById("test-" + test_id);
             test_option.remove();
-            return status;
+            return;
         }
     };
     xhr.send(JSON.stringify({test_id: selected_test.value}));
 }
 
+// Function to hide all questions from a test
+function hideQuestions() {
+    // Get all question options
+    var questions = document.querySelectorAll("#select-question");
+    // Ignore the first default option
+    for (let i = 1; i < questions.length; ++i) {
+        questions[i].style.display = 'none';
+    }
+}
+
+// Function to only display questions from a specific test
+function showTestQuestions(test_id) {
+    // Get all question options
+    var questions = document.querySelectorAll("#select-question");
+    // Ignore the first default option
+    for (let i = 1; i < questions.length; ++i) {
+        // Check to see if the question is a part of this test and display it
+        if (questions[i].value.search("test-" + test_id) == 0) {
+            questions[i].style.display = 'block';
+        } else {
+            questions[i].style.display = 'none';
+        }
+    }
+}
+
+// Function used to add a question to a running test
 function addQuestion() {
+    let test_active = document.getElementById("test-active").value;
+    let test_id = document.getElementById("test-id").value;
+
+    // Check for inactive test
+    if (!test_active) {
+        alert("No active test!");
+        return;
+    }
+    // Check for no current test_id (value is 0)
+    if (!test_id) {
+        alert("Selected test is not valid!");
+        return;
+    }
+
+    // Parse the question text to make sure it is not empty
+    question_text = document.getElementById("question").value;
+
+    if (question_text.trim() == "") {
+        alert("Question cannot be blank");
+        return;
+    }
+
+    // Create question in database and initialize the question_id
+    let xhr = new XMLHttpRequest();
+    xhr.open("POST", "/create_question", true);
+    xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+    xhr.onreadystatechange = function () {
+        if (xhr.readyState === XMLHttpRequest.DONE && xhr.status === 200) {
+            let response = JSON.parse(xhr.responseText);
+            let question_id = response.question_id;
+            console.log(question_id);
+            if (question_id > 0) {
+                alert("Question added successfully");
+            } else {
+                alert("Question failed to be added");
+                return;
+            }
+            // Add question to select box
+            var questions_box = document.getElementById("select-question");
+            questions_box.innerHTML += '<option id="test-'+test_id+'-question-'+question_id+'" value="'+question_id+'" selected>'+question_text+'</option>';
+
+            // Update question-id hidden input with the question_id
+            document.getElementById("question-id").value = question_id;
+            return;
+        }
+    };
+    xhr.send(JSON.stringify({test_id: test_id, question_text: question_text}));
 
 }
 
 function delQuestion() {
+    let test_active = document.getElementById("test-active").value;
+    let test_id = document.getElementById("test-id").value;
+    let question_id = document.getElementById("select-question").value;
+    let reading_active = document.getElementById("reading-active").value;
+
+    // Check for inactive test
+    if (test_active == 0) {
+        alert("No active test!");
+        return;
+    }
+    // Check for no current test_id (value is 0)
+    if (test_id == 0) {
+        alert("Selected test is not valid!");
+        return;
+    }
+
+    // Check for lack of question
+    if (question_id == 0) {
+        alert("No question selected!");
+        return;
+    }
+
+    // Check if the program is currently reading in sensor data
+    if (reading_active == 1) {
+        alert("Cannot stop question while reading is active!");
+        return;
+    }
+
+    // Send request to delete the question
+    let xhr = new XMLHttpRequest();
+    xhr.open("POST", "/delete_question", true);
+    xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+    xhr.onreadystatechange = function () {
+        if (xhr.readyState === XMLHttpRequest.DONE && xhr.status === 200) {
+            let response = JSON.parse(xhr.responseText);
+            let rows_deleted = response.rows_deleted;
+            console.log(rows_deleted);
+            if (rows_deleted == 1) {
+                alert("Question successfully deleted!");
+            } else if (rows_deleted == 0) {
+                alert("Question failed to be deleted!");
+            } else {
+                alert("Error: Extra questions were deleted!");
+            }
+            // Remove question from select box
+            let question_option = document.getElementById("test-" + test_id + "-question-" + question_id);
+            question_option.remove();
+            return;
+        }
+    };
+    xhr.send(JSON.stringify({question_id: question_id}));
 
 }
 
