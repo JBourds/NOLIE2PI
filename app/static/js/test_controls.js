@@ -33,7 +33,6 @@ function startTestReadings() {
     xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
     xhr.send(JSON.stringify({question_id: question_id}));
 
-    alert("Readings started!");
 }
 
 function stopTestReadings() {
@@ -68,7 +67,10 @@ function stopTestReadings() {
     xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
     xhr.send();
 
-    alert("Readings stopped!");
+    // Stop charts from displaying new data
+    clearInterval(gsr_interval_id);
+    clearInterval(hr_interval_id);
+    clearInterval(spo2_interval_id);
 }
 
 // Allows you to reset the graph to only display data for the given question
@@ -78,13 +80,7 @@ function viewQuestionReading() {
     let question_id = document.getElementById("question-id");
     let reading_active = document.getElementById("reading-active").value;
 
-    if (test_active == 0) {
-        alert("No test to view reading for!");
-        return;
-    }
-
-    if (reading_active == 1) {
-        alert("Already viewing reading!");
+    if (!validateQuestion()) {
         return;
     }
 
@@ -190,7 +186,6 @@ function addTest() {
     if (active_test.value == 1) {
         alert("Test already active! Must complete current test first before starting a new one!");
     } else {
-        active_test.value = 1;
         let today = new Date();
         // ChatGPT
         // Format the date as YYYY-MM-DD
@@ -205,17 +200,22 @@ function addTest() {
                     let response = JSON.parse(xhr.responseText);
                     test_id = response.test_id;
                     console.log(test_id);
-                    if (test_id != 0) {
+                    if (document.getElementById("test-" + test_id) != null) {
+                        alert("Test for user already exists!");
+                        return;
+                    } else if (test_id != 0) {
                         alert("Test successfully created!");
+                        active_test.value = 1;
                         // Wipe out all questions for previous test
                         hideQuestions();
                     } else {
                         alert("Test failed to be created!");
+                        return;
                     }
                     // Add test to select box for a given user.
                     // A user can only have 1 test on a given day so no need to specify since each user's name is unique
                     let test_select = document.getElementById("select-test")
-                    test_select.innerHTML += '<option id="test-' + test_id + '" value="' + test_id + '" selected>' + selected_user_name + '</option>';
+                    test_select.innerHTML += '<option id="test-' + test_id + '" value="' + test_id + '" selected>' + selected_user_name + " - " + formattedDate + ' (Active)</option>';
                     test_select.value = test_id;
     
                     // Update hidden test_id input
@@ -235,18 +235,53 @@ function addTest() {
 }
 
 function completeTest() {
-    var active_test = document.getElementById("test-active");
+    let test_active = document.getElementById("test-active");
 
     // Stop test, don't reset test_id hidden input as it is the last test to be ran
-    if (active_test.value == 1) {
-        alert("Test completed!");
-        active_test.value = 0;
-    } else {
+    if (test_active.value == 0) {
         alert("No running test!");
+        return;
     }
+
+    alert("Test completed!");
+    test_active.value = 0;
+
+    // Remove the "(Active)" from the running test
+    let active_test_id = document.getElementById("test-id").value;
+    let active_test = document.getElementById("test-" + active_test_id);
+    active_test.textContent = active_test.textContent.replace(" (Active)", "");
 
     // Change selected option to default test
     document.getElementById("default-test").selected = true;
+
+    hideQuestions();
+}
+
+function activateTest() {
+    let test_active = document.getElementById("test-active");
+    let selected_test = document.getElementById("select-test");
+
+    // Already an active test running, return
+    if (test_active.value == 1) {
+        alert("There is already an active test!");
+        return;
+    }
+
+    // No selected test, return
+    if (selected_test.value == 0) {
+        alert("No selected test to activate!");
+        return;
+    }
+
+    // Update the test_active and test_id hidden inputs
+    test_active.value = 1;
+    document.getElementById("test-id").value = selected_test.value;
+
+    // Add "(Active)" from the running test
+    let active_test = document.getElementById("test-" + selected_test.value);
+    active_test.textContent += " (Active)";
+
+    showTestQuestions();
 }
 
 function delTest() {
@@ -280,7 +315,7 @@ function delTest() {
                     alert("Error: Extra tests were deleted!");
                 }
                 // Delete test from select box
-                let test_option = document.getElementById("test-" + test_id);
+                let test_option = document.getElementById("test-" + selected_test.value);
                 test_option.remove();
                 return;
             }
@@ -328,8 +363,6 @@ function showTestQuestions() {
     if (question_count == 0) {
         alert("No questions to show for test!");
         return;
-    } else {
-        alert("Showing " + question_count + " questions!");
     }
 
     // Clear out current question box text
@@ -410,10 +443,20 @@ function addQuestion() {
                 }
                 // Add question to select box
                 var questions_box = document.getElementById("select-question");
-                questions_box.innerHTML += '<option id="test-'+test_id+'-question-'+question_id+'" value="'+question_id+'" selected>'+question_text+'</option>';
+                questions_box.innerHTML += '<option id="test-'+test_id+'-question-'+question_id+'" value="'+question_id+'" selected>'+question_text+' - Pass (Active)</option>';
+
+                // Remove "(Active)" from current question if there is one
+                current_question_id = document.getElementById("question-id").value;
+                console.log(current_question_id);
+
+                if (current_question_id != 0) {
+                    current_question = document.getElementById("test-" + test_id + "-question-" + current_question_id);
+                    current_question.textContent = current_question.textContent.replace(" (Active)", "");
+                }
 
                 // Update question-id hidden input with the question_id
                 document.getElementById("question-id").value = question_id;
+                resetCharts();
                 return;
             }
         };
@@ -421,36 +464,13 @@ function addQuestion() {
     } catch (e) {
         alert(e);
     }
-
-
 }
 
 function delQuestion() {
-    let test_active = document.getElementById("test-active").value;
     let test_id = document.getElementById("test-id").value;
     let question_id = document.getElementById("select-question").value;
-    let reading_active = document.getElementById("reading-active").value;
 
-    // Check for inactive test
-    if (test_active == 0) {
-        alert("No active test!");
-        return;
-    }
-    // Check for no current test_id (value is 0)
-    if (test_id == 0) {
-        alert("Selected test is not valid!");
-        return;
-    }
-
-    // Check for lack of question
-    if (question_id == 0) {
-        alert("No question selected!");
-        return;
-    }
-
-    // Check if the program is currently reading in sensor data
-    if (reading_active == 1) {
-        alert("Cannot stop question while reading is active!");
+    if (!validateQuestion()) {
         return;
     }
 
@@ -481,7 +501,198 @@ function delQuestion() {
     } catch (e) {
         alert(e);
     }
-
-
 }
 
+function activateQuestion() {
+
+    // Same validation except validateQuestion checks the question-id hidden input and this button needs to check
+    // the select-question input
+    let test_active = document.getElementById("test-active").value;
+    let test_id = document.getElementById("test-id").value;
+    let question_id = document.getElementById("select-question").value;
+    let reading_active = document.getElementById("reading-active").value;
+
+    // Check for inactive test
+    if (test_active == 0) {
+        alert("No active test!");
+        return false;
+    }
+    // Check for no current test_id (value is 0)
+    if (test_id == 0) {
+        alert("Selected test is not valid!");
+        return false;
+    }
+
+    // Check for lack of question
+    if (question_id == 0) {
+        alert("No question selected!");
+        return false;
+    }
+
+    // Check if the program is currently reading in sensor data
+    if (reading_active == 1) {
+        alert("Cannot stop question while reading is active!");
+        return false;
+    }
+
+    let current_question =  document.getElementById("question-id");
+    let old_question_id = current_question.value;
+    let new_question = document.getElementById("select-question");
+
+    // Update question ID to the selected question ID
+    current_question.value = new_question.value
+
+    // Add "(Active)" to selected question
+    document.getElementById("test-" + test_id + "-question-" + new_question.value).textContent += " (Active)";
+
+    // Remove "(Active)" from old question
+    let old_question = document.getElementById("test-" + test_id + "-question-" + old_question_id);
+    if (old_question != null) {
+        old_question.textContent = old_question.textContent.replace(" (Active)", "");
+    }
+
+    resetCharts();
+}
+
+// Reset all the readings associated with the question
+function resetQuestion() {
+    if (!validateQuestion()) {
+        return;
+    }
+
+    let question_id =  document.getElementById("question-id").value;
+
+    try {
+        let xhr = new XMLHttpRequest();
+        xhr.open("POST", "/reset_question", true);
+        xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+        xhr.onreadystatechange = function () {
+            if (xhr.readyState === XMLHttpRequest.DONE && xhr.status === 200) {
+                let response = JSON.parse(xhr.responseText);
+                let rows_deleted = response.rows_deleted;
+                console.log(rows_deleted);
+                if (rows_deleted == -1) {
+                    alert("No readings deleted!");
+                } else {
+                    alert("Readings cleared for question!");
+                }
+                resetCharts();
+                return;
+            }
+        };
+        xhr.send(JSON.stringify({question_id: question_id}));
+    } catch (e) {
+        alert(e);
+    }
+}
+
+// Mark the selected question as a pass
+function questionPass() {
+    let test_id = document.getElementById("test-id").value;
+    let question_id = document.getElementById("select-question").value;
+    let question = document.getElementById("test-" + test_id + "-question-" + question_id);
+
+    if (!validateQuestion()) {
+        return;
+    }
+
+    // Check if the question is already marked as "Pass"
+    if (question.textContent.search("Pass") != -1) {
+        alert("Question already marked as pass!");
+        return;
+    }
+
+    try {
+        let xhr = new XMLHttpRequest();
+        xhr.open("POST", "/question_pass", true);
+        xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+        xhr.onreadystatechange = function () {
+            if (xhr.readyState === XMLHttpRequest.DONE && xhr.status === 200) {
+                let response = JSON.parse(xhr.responseText);
+                let status = response.status;
+                console.log(status);
+                if (status != "Succeeded") {
+                    alert("Error: Failure marking question as a pass!");
+                    return;
+                }
+                // Update question to now show as "Pass"
+                question.textContent = question.textContent.replace("Fail", "Pass");
+                return;
+            }
+        };
+        xhr.send(JSON.stringify({question_id: question_id}));
+    } catch (e) {
+        alert(e);
+    }
+}
+
+function questionFail() {
+    let test_id = document.getElementById("test-id").value;
+    let question_id = document.getElementById("select-question").value;
+    let question = document.getElementById("test-" + test_id + "-question-" + question_id);
+
+    if (!validateQuestion()) {
+        return;
+    }
+
+    // Check if the question is already marked as "Pass"
+    if (document.getElementById("test-" + test_id + "-question-" + question_id).textContent.search("Fail") != -1) {
+        alert("Question already marked as fail!");
+        return;
+    }
+
+    try {
+        let xhr = new XMLHttpRequest();
+        xhr.open("POST", "/question_fail", true);
+        xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+        xhr.onreadystatechange = function () {
+            if (xhr.readyState === XMLHttpRequest.DONE && xhr.status === 200) {
+                let response = JSON.parse(xhr.responseText);
+                let status = response.status;
+                console.log(status);
+                if (status != "Succeeded") {
+                    alert("Error: Failure marking question as a fail!");
+                    return;
+                }
+                // Update question to now show as "Pass"
+                question.textContent = question.textContent.replace("Pass", "Fail");
+                return;
+            }
+        };
+        xhr.send(JSON.stringify({question_id: question_id}));
+    } catch (e) {
+        alert(e);
+    }
+}
+
+function validateQuestion() {
+    let test_active = document.getElementById("test-active").value;
+    let test_id = document.getElementById("test-id").value;
+    let question_id = document.getElementById("question-id").value;
+    let reading_active = document.getElementById("reading-active").value;
+
+    // Check for inactive test
+    if (test_active == 0) {
+        alert("No active test!");
+        return false;
+    }
+    // Check for no current test_id (value is 0)
+    if (test_id == 0) {
+        alert("Selected test is not valid!");
+        return false;
+    }
+
+    // Check for lack of question
+    if (question_id == 0) {
+        alert("No question selected!");
+        return false;
+    }
+
+    // Check if the program is currently reading in sensor data
+    if (reading_active == 1) {
+        alert("Cannot stop question while reading is active!");
+        return false;
+    }
+
+    return true
+}

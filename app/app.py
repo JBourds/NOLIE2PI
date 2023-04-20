@@ -1,12 +1,13 @@
 import datetime
 
 from constants import *
+from datetime import date
 from DateTimeEncoder import DateTimeEncoder
 from flask import Flask, jsonify, render_template, request
 from flask_bootstrap import Bootstrap
 from grove_gsr_sensor import GroveGSRSensor
 import json
-from lib.max_sensor import max30102
+from lib.max_sensor import hrcalc, max30102
 import logging
 import mysql.connector
 import time
@@ -22,10 +23,8 @@ log.disabled = True
 
 # Galvanic Skin Response / Skin Conductivity
 read_gsr = False
-# Heart Rate
-read_hr = False
-# Blood oxygen saturation levels
-read_spo2 = False
+# Heart rate and SPO2
+read_max30102 = False
 
 # Debug switch
 DEBUG_SQL = False
@@ -64,8 +63,113 @@ def tests():
 
 @app.route("/gsr_test", methods=["GET"])
 def gsr_test():
-    users = fetch_users()
-    return render_template("gsr.html", users=users, name="Jordan Bourdeau")
+    users, tests, questions = fetch_todays_test_data()
+    return render_template("gsr.html", users=users, tests=tests, questions=questions, name="Jordan Bourdeau")
+
+def fetch_todays_test_data():
+    # All data needed for test questions
+    users = {}
+    tests = {}
+    questions = {}
+
+    database = mysql.connector.connect(
+        host=DATABASE_HOST,
+        user=DATABASE_USER,
+        passwd=DATABASE_PASSWORD,
+        database=DATABASE_NAME
+    )
+
+    cursor = database.cursor()
+
+    select_users = """SELECT Users.user_id, name 
+                        FROM Users 
+                        ORDER BY name DESC;"""
+    select_tests = """SELECT test_id, name 
+                        FROM Tests 
+                        LEFT JOIN Users 
+                        ON Users.user_id = Tests.user_id 
+                        WHERE date = %s  
+                        ORDER BY name DESC;"""
+    select_questions = """SELECT question_id, Test_Questions.test_id, question, pass
+                            FROM Test_Questions
+                            LEFT JOIN Tests
+                            ON Tests.test_id = Test_Questions.test_id
+                            WHERE date = %s
+                            ORDER BY test_id ASC"""
+
+    args = (date.today(),)
+
+    cursor.execute(select_users)
+    user_records = cursor.fetchall()
+    for user_record in user_records:
+        users[user_record[0]] = {
+            "name": user_record[1]
+        }
+
+    cursor.execute(select_tests, args)
+    test_records = cursor.fetchall()
+    for test_record in test_records:
+        tests[test_record[0]] = {
+            "name": test_record[1],
+            "date": str(date.today())
+        }
+
+    cursor.execute(select_questions, args)
+    question_records = cursor.fetchall()
+    for question_record in question_records:
+        questions[question_record[0]] = {
+            "test_id" : question_record[1],
+            "question_text" : question_record[2],
+            "pass" : question_record[3]
+        }
+
+
+    cursor.close()
+    database.commit()
+    database.close()
+
+    return users, tests, questions
+
+# This function will collect every test conducted today
+def fetch_todays_tests():
+    tests = {}
+    database = mysql.connector.connect(
+        host=DATABASE_HOST,
+        user=DATABASE_USER,
+        passwd=DATABASE_PASSWORD,
+        database=DATABASE_NAME
+    )
+
+    cursor = database.cursor()
+    select_tests = """SELECT test_id, name 
+                        FROM Tests 
+                        INNER JOIN  Users 
+                        ON Users.user_id = Tests.user_id 
+                        WHERE date = %s  
+                        ORDER BY name DESC;"""
+    args = (date.today(),)
+    # Select all tests and the name of the associated user
+    cursor.execute(select_tests, args)
+    if DEBUG_SQL:
+        print(cursor.statement)
+    test_records = cursor.fetchall()
+
+    # loop through user records
+    for test_record in test_records:
+        test_id = test_record[0]
+        name = test_record[1]
+
+        # add user data to dictionary of users
+        tests[test_id] = {
+            "name": name,
+            "date": str(date.today())
+        }
+
+    cursor.close()
+    database.commit()
+    database.close()
+
+    return tests
 
 # This function takes in a connection to a database and fetches all the test records in JSON format
 def fetch_users():
@@ -91,97 +195,13 @@ def fetch_users():
         user_id = user_record[0]
         user_name = user_record[1]
 
-        # retrieve tests for this user
-        select_tests = """SELECT test_id, date FROM Tests WHERE user_id = %s;"""
-        args = (user_id,)
-        cursor.execute(select_tests, args)
-        if DEBUG_SQL:
-            print(cursor.statement)
-        test_records = cursor.fetchall()
-
-        # create dictionary to store test data
-        tests = {}
-
-        # loop through test records
-        for test_record in test_records:
-            test_id = test_record[0]
-            test_date = test_record[1]
-
-            # retrieve questions for this test
-            select_question = """SELECT question_id, question, pass FROM Test_Questions WHERE test_id = %s;"""
-            args = (test_id,)
-            cursor.execute(select_question, args)
-
-            if DEBUG_SQL:
-                print(cursor.statement)
-            question_records = cursor.fetchall()
-
-            # create list to store question data
-            questions = []
-
-            # loop through question records
-            for question_record in question_records:
-                question_id = question_record[0]
-                question_text = question_record[1]
-                question_pass = question_record[2]
-
-                select_spo2 = """SELECT spo2_id, question_id, reading, timestamp FROM SPO2_Data WHERE question_id = %s;"""
-                select_gsr = """SELECT gsr_id, question_id, reading, timestamp FROM GSR_Data WHERE question_id = %s;"""
-                select_heart_rate = """SELECT hr_id, question_id, reading, timestamp FROM HR_Data WHERE question_id = %s;"""
-                args = (question_id,)
-
-                # retrieve data for this question
-                cursor.execute(select_spo2, args)
-                if DEBUG_SQL:
-                    print(cursor.statement)
-                bp_records = cursor.fetchall()
-
-                cursor.execute(select_gsr, args)
-                if DEBUG_SQL:
-                    print(cursor.statement)
-                gsr_records = cursor.fetchall()
-
-                cursor.execute(select_heart_rate, args)
-                if DEBUG_SQL:
-                    print(cursor.statement)
-                hr_records = cursor.fetchall()
-
-
-
-                # create dictionary to store question data and data records
-                question_data = {
-                    "text": question_text,
-                    "pass": question_pass,
-                    "bp_data": [{"bp_id": bp_record[0],
-                                 "question_id": bp_record[1],
-                                 "reading": bp_record[2],
-                                 "timestamp": str(bp_record[3])} for bp_record in bp_records],
-                    "gsr_data": [{"gsr_id": gsr_record[0],
-                                  "question_id": gsr_record[1],
-                                  "reading": gsr_record[2],
-                                  "timestamp": str(gsr_record[3])} for gsr_record in gsr_records],
-                    "hr_data": [{"hr_id": hr_record[0],
-                                 "question_id": hr_record[1],
-                                 "reading": hr_record[2],
-                                 "timestamp": str(hr_record[3])} for hr_record in hr_records]
-                }
-
-                # add question data to list of questions
-                questions.append(question_data)
-
-            # add test data to dictionary of tests
-            tests[test_id] = {
-                "date": str(test_date),
-                "questions": questions
-            }
-
         # add user data to dictionary of users
         users[user_id] = {
-            "name": user_name,
-            "tests": tests
+            "name": user_name
         }
 
     cursor.close()
+    database.commit()
     database.close()
 
     return users
@@ -189,8 +209,7 @@ def fetch_users():
 @app.route('/stop_reading', methods=['POST'])
 def stop_reading():
     globals()['read_gsr'] = False
-    globals()['read_hr'] = False
-    globals()['read_spo2'] = False
+    globals()['read_max30102'] = False
 
     print("Stopped reading!")
     return ""
@@ -201,8 +220,7 @@ def start_reading():
     data = request.get_json()
     question_id = data['question_id']
     globals()['read_gsr'] = True
-    globals()['read_hr'] = True
-    globals()['read_spo2'] = True
+    globals()['read_max30102'] = True
 
     database = mysql.connector.connect(
         host=DATABASE_HOST,
@@ -216,12 +234,24 @@ def start_reading():
 
     print("Started reading!")
     while globals()['read_gsr']:
-        insert_gsr_data(gsr_sensor, question_id)
-        # insert_heart_rate_data(database, max30102_sensor, question_id)
-        # insert_sp02_data(database, max30102_sensor, question_id)
-        time.sleep(1)
+        insert_gsr_data(gsr_sensor.GSR, question_id)
+        # Read
+        red, ir = max30102_sensor.read_sequential()
+        hr, hr_valid, spo2, spo2_valid = hrcalc.calc_hr_and_spo2(ir, red, 115, 95)
 
-    return "Stopped reading"
+        print(hr)
+        print(hr_valid)
+        print(spo2)
+        print(spo2_valid)
+
+        # Only insert values if they are deemed valid
+        if hr_valid:
+            insert_heart_rate_data(hr, question_id)
+
+        if spo2_valid:
+            insert_spo2_data(spo2, question_id)
+
+    return ""
 
 @app.route("/create_user", methods=['POST'])
 def create_user():
@@ -441,16 +471,156 @@ def delete_question(question_id):
 
     return rows_deleted
 
+@app.route("/reset_question", methods=['POST'])
+def reset_question():
+    data = request.get_json()
+    question_id = data['question_id']
+
+    database = mysql.connector.connect(
+        host=DATABASE_HOST,
+        user=DATABASE_USER,
+        passwd=DATABASE_PASSWORD,
+        database=DATABASE_NAME
+    )
+    cursor = database.cursor()
+    delete_gsr = """DELETE FROM GSR_Data WHERE question_id=%s;"""
+    delete_hr = """DELETE FROM HR_Data WHERE question_id=%s;"""
+    delete_spo2 = """DELETE FROM SPO2_Data WHERE question_id=%s;"""
+    args = (question_id,)
+
+    rows_deleted = 0
+
+    cursor.execute(delete_gsr, args)
+    rows_deleted += cursor.rowcount
+    if globals()['DEBUG_SQL']:
+        print(cursor.statement)
+
+    cursor.execute(delete_hr, args)
+    rows_deleted += cursor.rowcount
+    if globals()['DEBUG_SQL']:
+        print(cursor.statement)
+
+    cursor.execute(delete_spo2, args)
+    rows_deleted += cursor.rowcount
+    if globals()['DEBUG_SQL']:
+        print(cursor.statement)
+
+    cursor.close()
+    database.commit()
+    database.close()
+
+    return jsonify(rows_deleted=rows_deleted)
+
+@app.route("/question_pass", methods=['POST'])
+def question_pass():
+    data = request.get_json()
+    question_id = data['question_id']
+
+    database = mysql.connector.connect(
+        host=DATABASE_HOST,
+        user=DATABASE_USER,
+        passwd=DATABASE_PASSWORD,
+        database=DATABASE_NAME
+    )
+    cursor = database.cursor()
+    question_pass = """UPDATE Test_Questions SET pass=%s WHERE question_id=%s"""
+    args = (1, question_id,)
+    cursor.execute(question_pass, args)
+    if globals()['DEBUG_SQL']:
+        print(cursor.statement)
+
+    # Should be 1 on successful update
+    rows_updated = cursor.rowcount
+
+    cursor.close()
+    database.commit()
+    database.close()
+
+    if rows_updated == 1:
+        return jsonify(status="Succeeded")
+    else:
+        return jsonify(status="Failure")
+
+@app.route("/question_fail", methods=['POST'])
+def question_fail():
+    data = request.get_json()
+    question_id = data['question_id']
+
+    database = mysql.connector.connect(
+        host=DATABASE_HOST,
+        user=DATABASE_USER,
+        passwd=DATABASE_PASSWORD,
+        database=DATABASE_NAME
+    )
+    cursor = database.cursor()
+    question_fail = """UPDATE Test_Questions SET pass=%s WHERE question_id=%s"""
+    args = (0, question_id,)
+    cursor.execute(question_fail, args)
+    if globals()['DEBUG_SQL']:
+        print(cursor.statement)
+
+    # Should be 1 on successful update
+    rows_updated = cursor.rowcount
+
+    cursor.close()
+    database.commit()
+    database.close()
+
+    if rows_updated == 1:
+        return jsonify(status="Succeeded")
+    else:
+        return jsonify(status="Failure")
+
 
 # To be implemented
-def insert_spo2_data(max30102_sensor, question_id):
-    return
+def insert_spo2_data(spo2, question_id):
+    database = mysql.connector.connect(
+        host=DATABASE_HOST,
+        user=DATABASE_USER,
+        passwd=DATABASE_PASSWORD,
+        database=DATABASE_NAME
+    )
+    cursor = database.cursor()
+    timestamp = datetime.datetime.now()
+    insert_spo2_data = """
+        INSERT INTO SPO2_Data (question_id, reading, timestamp)
+        VALUES (%s, %s, %s);
+        """
+    args = (question_id, spo2/100.0, timestamp,)
+    cursor.execute(insert_spo2_data, args)
+
+    if globals()['DEBUG_SQL']:
+        print(cursor.statement)
+
+    cursor.close()
+    database.commit()
+    database.close()
 
 
-def insert_heart_rate_data(max30102_sensor, question_id):
-    return
+def insert_heart_rate_data(hr, question_id):
+    database = mysql.connector.connect(
+        host=DATABASE_HOST,
+        user=DATABASE_USER,
+        passwd=DATABASE_PASSWORD,
+        database=DATABASE_NAME
+    )
+    cursor = database.cursor()
+    timestamp = datetime.datetime.now()
+    insert_hr_data = """
+        INSERT INTO HR_Data (question_id, reading, timestamp)
+        VALUES (%s, %s, %s);
+        """
+    args = (question_id, hr, timestamp,)
+    cursor.execute(insert_hr_data, args)
 
-def insert_gsr_data(gsr_sensor, question_id):
+    if globals()['DEBUG_SQL']:
+        print(cursor.statement)
+
+    cursor.close()
+    database.commit()
+    database.close()
+
+def insert_gsr_data(gsr, question_id):
     database = mysql.connector.connect(
         host=DATABASE_HOST,
         user=DATABASE_USER,
@@ -463,7 +633,7 @@ def insert_gsr_data(gsr_sensor, question_id):
     INSERT INTO GSR_Data (question_id, reading, timestamp)
     VALUES (%s, %s, %s);
     """
-    args = (question_id, gsr_sensor.GSR, timestamp,)
+    args = (question_id, gsr, timestamp,)
     cursor.execute(insert_gsr_data, args)
 
     if globals()['DEBUG_SQL']:
@@ -503,6 +673,67 @@ def update_gsr():
     database.commit()
     database.close()
     return json.dumps(data, cls=DateTimeEncoder)
+
+@app.route('/hr', methods=['GET'])
+def update_hr():
+    database = mysql.connector.connect(
+        host=DATABASE_HOST,
+        user=DATABASE_USER,
+        passwd=DATABASE_PASSWORD,
+        database=DATABASE_NAME
+    )
+
+    cursor=database.cursor()
+
+    since_timestamp = request.args.get("since")
+    print(since_timestamp)
+    if since_timestamp is None:
+        since_timestamp = "0"
+    select_hr_data = """SELECT hr_id, question_id, reading, timestamp FROM HR_Data WHERE timestamp > %s;"""
+    args = (since_timestamp,)
+    cursor.execute(select_hr_data, args)
+    if globals()['DEBUG_SQL']:
+        print(cursor.statement)
+
+
+    data = cursor.fetchall()
+    print(data)
+
+    cursor.close()
+    database.commit()
+    database.close()
+    return json.dumps(data, cls=DateTimeEncoder)
+
+@app.route('/spo2', methods=['GET'])
+def update_spo2():
+    database = mysql.connector.connect(
+        host=DATABASE_HOST,
+        user=DATABASE_USER,
+        passwd=DATABASE_PASSWORD,
+        database=DATABASE_NAME
+    )
+
+    cursor=database.cursor()
+
+    since_timestamp = request.args.get("since")
+    print(since_timestamp)
+    if since_timestamp is None:
+        since_timestamp = "0"
+    select_spo2_data = """SELECT spo2_id, question_id, reading, timestamp FROM SPO2_Data WHERE timestamp > %s;"""
+    args = (since_timestamp,)
+    cursor.execute(select_spo2_data, args)
+    if globals()['DEBUG_SQL']:
+        print(cursor.statement)
+
+
+    data = cursor.fetchall()
+    print(data)
+
+    cursor.close()
+    database.commit()
+    database.close()
+    return json.dumps(data, cls=DateTimeEncoder)
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', debug=True)
