@@ -5,43 +5,112 @@ Past Tests
 
 {% block content %}
 <h2 class="mb-3">Past Tests</h2>
-<section class="my-4">
-  <p class="mb-2">Select user:</p>
-  <select id="select-user" class="custom-select mb-4">
-    <option value="0" selected>Open this select menu</option>
-    {% for user_id, user_data in users.items() %}
-      <option value="{{ user_id }}">{{ user_data['name'] }}</option>
-    {% endfor %}
-  </select>
-</section>
 
-<section id="select-test" class="my-4">
-  <p class="mb-2">Select test:</p>
-  <select class="custom-select mb-4">
-    <option selected>Open this select menu</option>
-    {% for user_id in users %}
-      <option value="{{ user_id }}">{{ users[user_id]['name'] }}</option>
-    {% endfor %}
-  </select>
-</section>
+<main role="main" class="container">
 
-<section id="test">
-  <button id="new-test" class="btn btn-success mr-2 mb-4">New Test</button>
+    <div id="users" class="form-group mb-4">
+        <label for="select-user" class="col-form-label mb-2">Select user:</label>
+        <select id="select-user" class="custom-select mb-4">
+            <option id="default-user" value="0" selected>Open this select menu</option>
+            {% for user_id, user_data in users.items() %}
+              <option id="user-{{ user_id }}" value="{{ user_id }}">{{ user_data['name'] }}</option>
+            {% endfor %}
+        </select>
 
-  <div id="questions" class="my-4">
-    <button id="add-question" class="btn btn-success mr-2">Add Question</button>
-    <input type="text" id="new-question" placeholder="Type question here then hit the 'Add Question' button" class="form-control mt-2 mr-2">
-    <select id="select-question" class="custom-select mt-2 mr-2"></select>
-    <button id="delete-question" class="btn mt-2 btn-danger">Delete Question</button>
-  </div>
+        <input type="hidden" id="user-id" name="user-id" value="0">
+        <button id="filter-tests" class="btn btn-primary mr-2 mb-4" onclick="filterTests()">Filter Tests for User</button>
+        <button id="remove-filter" class="btn btn-danger mr-2 mb-4" onclick="removeFilter()">Remove Test Filter</button>
+    </div>
 
-  <button id="start-recording" class="btn btn-success mr-2 mb-4">Start Recording</button>
-  <button id="stop-recording" class="btn btn-danger mr-2 mb-4">Stop Recording</button>
-  <div id="gsr-data" class="my-4"></div>
-  <div id="bp-data" class="my-4"></div>
-  <div id="hr-data" class="my-4"></div>
+    <div id="tests" class="form-group mb-4">
+        <input type="hidden" id="test-active" name="test-active" value="0">
+        <input type="hidden" id="test-id" name="test-id" value="0">
 
-  <button id="end-test" class="btn btn-danger mt-4">End Test</button>
-</section>
+        <!-- Activate a test -->
+        <button id="activate-test" class="btn btn-primary mr-2 mb-4" onclick="viewTest()">View Test</button>
+        <button id="delete-test" class="btn btn-danger mr-2 mb-4" onclick="delPastTest()">Delete Selected Test</button>
+
+        <label for="select-test">Select Test:</label>
+        <select id="select-test" class="custom-select mb-4">
+            <option id="default-test" value="0" selected>Open this select menu</option>
+            {%  for test_id, test_data in tests.items() %}
+                <option id="test-{{ test_id }}" name="user-{{ test_data['user_id'] }}-tests" value="{{ test_id }}">{{ test_data['name'] + " - " + test_data['date'] }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+
+    <div id="test-question" class="form-group mb-4">
+        <label for="question" class="col-form-label">Question:</label>
+        <input type="text" id="question" name="question" class="form-control mt-2 mr-2">
+        <input type="hidden" id="question-id" name="question-id" value="0">
+
+        <button id="activate-question" class="btn btn-primary mr-2 mb-4" onclick="activateQuestion()">Activate Question</button>
+
+        <label for="select-test">Select Question:</label>
+        <select id="select-question" class="custom-select mb-4">
+            <option id="default-question" value="0" selected>Open this select menu</option>
+            {%  for question_id, question_data in questions.items() %}
+                <option id="test-{{ question_data['test_id'] }}-question-{{ question_id }}" value="{{ question_id }}">{{ question_data['question_text'] }} - {{ "Pass" if question_data['pass'] else "Fail" }}</option>
+            {% endfor %}
+        </select>
+
+        <!-- Button to view a question's reading -->
+        <button id="view-reading" class="btn btn-warning mr-2 mb-4" onclick="viewPastQuestionReading()">View Question Reading</button>
+
+    </div>
+
+
+    <div id="graphs" class="form-group mb-4">
+        <canvas class="mt-10" id="gsr-chart"></canvas>
+        <canvas class="mt-10" id="hr-chart"></canvas>
+        <canvas class="mt-10" id="spo2-chart"></canvas>
+    </div>
+
+    <div id="readings" class="form-group mb-4">
+
+        <table id="gsr-readings" class="table table-striped table-hover">
+            <thead>
+                <tr>
+                    <th>GSR_ID</th>
+                    <th>Question_ID</th>
+                    <th>Reading (resistance, μS)</th>
+                    <th>Timestamp</th>
+                </tr>
+            </thead>
+            <tbody id="gsr-tbody"></tbody>
+        </table>
+
+        <table id="hr-readings" class="table table-striped table-hover">
+            <thead>
+                <tr>
+                    <th>HR_ID</th>
+                    <th>Question_ID</th>
+                    <th>Reading (BPM)</th>
+                    <th>Timestamp</th>
+                </tr>
+            </thead>
+            <tbody id="hr-tbody"></tbody>
+        </table>
+
+        <table id="spo2-readings" class="table table-striped table-hover">
+            <thead>
+                <tr>
+                    <th>SPO2_ID</th>
+                    <th>Question_ID</th>
+                    <th>Reading (resistance, μS)</th>
+                    <th>Timestamp</th>
+                </tr>
+            </thead>
+            <tbody id="spo2-tbody"></tbody>
+        </table>
+    </div>
+
+</main>
+
+
+<script src="/static/js/data_displays.js"></script>
+<script src="/static/js/test_controls.js"></script>
+<script>hideQuestions();</script>
 
 {% endblock %}

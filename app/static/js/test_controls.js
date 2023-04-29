@@ -246,7 +246,7 @@ function completeTest() {
     alert("Test completed!");
     test_active.value = 0;
 
-    // Remove the "(Active)" from the running test
+    // Remove the "(Active)" to the running test
     let active_test_id = document.getElementById("test-id").value;
     let active_test = document.getElementById("test-" + active_test_id);
     active_test.textContent = active_test.textContent.replace(" (Active)", "");
@@ -376,7 +376,7 @@ function showTestQuestions() {
     // Ignore the first default option
     for (let i = 1; i < questions.length; ++i) {
         // Check to see if the question is a part of this test and display it
-        if (questions[i].id.search("test-" + test_id) == 0) {
+        if (questions[i].id.search("test-" + test_id + "-") == 0) {
             questions[i].style.display = 'block';
         } else {
             questions[i].style.display = 'none';
@@ -393,7 +393,7 @@ function getTestQuestionCount(test_id) {
     // Ignore the first default option
     for (let i = 1; i < questions.length; ++i) {
         // Check to see if the question is a part of this test and display it
-        if (questions[i].id.search("test-" + test_id) == 0) {
+        if (questions[i].id.search("test-" + test_id + "-") == 0) {
             ++question_count;
         }
     }
@@ -665,6 +665,7 @@ function questionFail() {
     }
 }
 
+// Basic question validation
 function validateQuestion() {
     let test_active = document.getElementById("test-active").value;
     let test_id = document.getElementById("test-id").value;
@@ -695,4 +696,127 @@ function validateQuestion() {
     }
 
     return true
+}
+
+/**
+ * Functions for past tests page
+ */
+
+// Function used in tests.html to filter only tests for a certain user
+function filterTests() {
+    let selected_user = document.getElementById("select-user");
+    let user_tests = document.getElementsByName("user-" + selected_user.value + "-tests")
+    let tests = document.querySelectorAll("#select-test option");
+
+    if (selected_user.value == 0) {
+        alert("No user selected!");
+        return;
+    }
+
+    // First hide all names
+    for (let i = 0; i < tests.length; ++i) {
+        tests[i].style.display = 'none';
+    }
+
+    // Display all the user's tests
+    for (let i = 0; i < user_tests.length; ++i) {
+        user_tests[i].style.display = 'block';
+    }
+
+    alert("Filter applied!");
+}
+
+// Function used to remove all filters on the tests that appear
+function removeFilter() {
+    let tests = document.querySelectorAll("#select-test option");
+    for (let i = 0; i < tests.length; ++i) {
+        tests[i].style.display = 'block';
+    }
+    alert("Filters removed!");
+}
+
+// Function to view a new test's question on the past questions page
+function viewTest() {
+    let test_active = document.getElementById("test-active");
+
+    // Deactivate a running test
+    if (test_active.value == 1) {
+         test_active.value = 0;
+        // Remove the "(Active)" to the running test
+        let active_test_id = document.getElementById("test-id").value;
+        let active_test = document.getElementById("test-" + active_test_id);
+        active_test.textContent = active_test.textContent.replace(" (Active)", "");
+        hideQuestions();
+    }
+
+    activateTest();
+
+}
+
+// Same as other delTest function, but can only delete "Active" tests in the test history
+function delPastTest() {
+    let selected_test = document.getElementById("select-test");
+    let test_id = document.getElementById("test-id");
+    let active_test = document.getElementById("test-active");
+
+    if (test_id.value == 0) {
+        alert("Must select test to delete!");
+        return;
+    } else if (active_test.value == 0) {
+        alert("Must activate test to delete!");
+        return;
+    } else if (selected_test.value != test_id.value) {
+        alert("Selected test must be the active test in order to delete!");
+        return;
+    }
+
+     try {
+        // Delete the test
+        let xhr = new XMLHttpRequest();
+        xhr.open("POST", "/delete_test", true);
+        xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+        xhr.onreadystatechange = function () {
+            if (xhr.readyState === XMLHttpRequest.DONE && xhr.status === 200) {
+                let response = JSON.parse(xhr.responseText);
+                let rows_deleted = response.rows_deleted;
+                console.log(rows_deleted);
+                if (rows_deleted == 1) {
+                    alert("Test successfully deleted!");
+                } else if (rows_deleted == 0) {
+                    alert("Test failed to be deleted!");
+                } else {
+                    alert("Error: Extra tests were deleted!");
+                }
+                // Delete test from select box
+                let test_option = document.getElementById("test-" + test_id.value);
+                test_option.remove();
+
+                // Reset hidden inputs
+                active_test.value = 0;
+                test_id.value = 0;
+                return;
+            }
+        };
+        xhr.send(JSON.stringify({test_id: test_id.value}));
+    } catch (e) {
+        alert(e);
+    }
+
+}
+
+// Same as function from polygraph page but does different question validation
+function viewPastQuestionReading() {
+    let test_active = document.getElementById("test-active").value;
+    let selected_question = document.getElementById("select-question").value;
+    let question_id = document.getElementById("question-id");
+
+    if (test_active == 0) {
+        alert("No active test being viewed!");
+    } else if (selected_question == 0) {
+        alert("No question selected!");
+        return;
+    }
+
+    question_id.value = selected_question;
+    displayPastQuestionData();
 }
