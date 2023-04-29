@@ -1,4 +1,5 @@
 import datetime
+import time
 
 from constants import *
 from datetime import date
@@ -11,9 +12,8 @@ from lib.max_sensor import hrcalc, max30102
 import logging
 import mysql.connector
 import threading
-import time
 
-
+# Flask app setup
 app = Flask(__name__)
 Bootstrap(app)
 
@@ -54,6 +54,7 @@ def fetch_test_data(test_date=None, date_ordering="DESC", name_ordering="ASC"):
 
     database = mysql.connector.connect(
         host=DATABASE_HOST,
+        port=DATABASE_PORT,
         user=DATABASE_USER,
         passwd=DATABASE_PASSWORD,
         database=DATABASE_NAME
@@ -152,14 +153,17 @@ def start_reading():
 
     def gsr_thread():
         while read_gsr:
+            gsr_data = gsr_sensor.GSR
             if DEBUG_OUTPUT:
-                print(f"GSR Data: {gsr_sensor.GSR}")
-            insert_gsr_data(gsr_sensor.GSR, question_id)
+                print(f"GSR Data: {gsr_data}")
+            if gsr_data < 590: # 590-600 are readings that happen when no finger is in the glove
+                insert_gsr_data(gsr_sensor.GSR, question_id)
+                time.sleep(1)
 
     def max30102_thread():
         while read_max30102:
             red, ir = max30102_sensor.read_sequential()
-            hr, hr_valid, spo2, spo2_valid = hrcalc.calc_hr_and_spo2(ir, red, 200, 95)
+            hr, hr_valid, spo2, spo2_valid = hrcalc.calc_hr_and_spo2(ir, red, 200, 80)
 
             print(f"HR Data: {hr}, Valid: {hr_valid}")
             print(f"SPO2 Data: {spo2}, Valid: {spo2_valid}")
@@ -171,9 +175,9 @@ def start_reading():
             if spo2_valid:
                 insert_spo2_data(spo2, question_id)
 
-    # Read in data using multithreading that way dmax30102 data collection doesn't slow down GSR sensor
+    # Read in data using multithreading that way max30102 data collection doesn't slow down GSR sensor
     thread_gsr = threading.Thread(target=gsr_thread)
-    thread_hr_spo2 = threading.Thread(target=max30102_thread())
+    thread_hr_spo2 = threading.Thread(target=max30102_thread)
 
     thread_gsr.start()
     thread_hr_spo2.start()
@@ -190,6 +194,7 @@ def create_user():
 def create_user(user):
     database = mysql.connector.connect(
         host=DATABASE_HOST,
+        port=DATABASE_PORT,
         user=DATABASE_USER,
         passwd=DATABASE_PASSWORD,
         database=DATABASE_NAME
@@ -232,6 +237,7 @@ def delete_user(user):
 
     database = mysql.connector.connect(
         host=DATABASE_HOST,
+        port=DATABASE_PORT,
         user=DATABASE_USER,
         passwd=DATABASE_PASSWORD,
         database=DATABASE_NAME
@@ -278,6 +284,7 @@ def create_test(user_id):
     global DEBUG_SQL
     database = mysql.connector.connect(
         host=DATABASE_HOST,
+        port=DATABASE_PORT,
         user=DATABASE_USER,
         passwd=DATABASE_PASSWORD,
         database=DATABASE_NAME
@@ -323,6 +330,7 @@ def delete_test(test_id):
 
     database = mysql.connector.connect(
         host=DATABASE_HOST,
+        port=DATABASE_PORT,
         user=DATABASE_USER,
         passwd=DATABASE_PASSWORD,
         database=DATABASE_NAME
@@ -355,6 +363,7 @@ def create_question(test_id, question):
     global DEBUG_SQL
     database = mysql.connector.connect(
         host=DATABASE_HOST,
+        port=DATABASE_PORT,
         user=DATABASE_USER,
         passwd=DATABASE_PASSWORD,
         database=DATABASE_NAME
@@ -386,6 +395,7 @@ def delete_question(question_id):
     global DEBUG_SQL
     database = mysql.connector.connect(
         host=DATABASE_HOST,
+        port=DATABASE_PORT,
         user=DATABASE_USER,
         passwd=DATABASE_PASSWORD,
         database=DATABASE_NAME
@@ -413,6 +423,7 @@ def reset_question():
 
     database = mysql.connector.connect(
         host=DATABASE_HOST,
+        port=DATABASE_PORT,
         user=DATABASE_USER,
         passwd=DATABASE_PASSWORD,
         database=DATABASE_NAME
@@ -455,6 +466,7 @@ def question_pass():
 
     database = mysql.connector.connect(
         host=DATABASE_HOST,
+        port=DATABASE_PORT,
         user=DATABASE_USER,
         passwd=DATABASE_PASSWORD,
         database=DATABASE_NAME
@@ -487,6 +499,7 @@ def question_fail():
 
     database = mysql.connector.connect(
         host=DATABASE_HOST,
+        port=DATABASE_PORT,
         user=DATABASE_USER,
         passwd=DATABASE_PASSWORD,
         database=DATABASE_NAME
@@ -517,6 +530,7 @@ def insert_spo2_data(spo2, question_id):
     global DEBUG_SQL
     database = mysql.connector.connect(
         host=DATABASE_HOST,
+        port=DATABASE_PORT,
         user=DATABASE_USER,
         passwd=DATABASE_PASSWORD,
         database=DATABASE_NAME
@@ -543,6 +557,7 @@ def insert_heart_rate_data(hr, question_id):
     global DEBUG_SQL
     database = mysql.connector.connect(
         host=DATABASE_HOST,
+        port=DATABASE_PORT,
         user=DATABASE_USER,
         passwd=DATABASE_PASSWORD,
         database=DATABASE_NAME
@@ -567,6 +582,7 @@ def insert_gsr_data(gsr, question_id):
     global DEBUG_SQL
     database = mysql.connector.connect(
         host=DATABASE_HOST,
+        port=DATABASE_PORT,
         user=DATABASE_USER,
         passwd=DATABASE_PASSWORD,
         database=DATABASE_NAME
@@ -593,6 +609,7 @@ def update_gsr():
     global DEBUG_SQL
     database = mysql.connector.connect(
         host=DATABASE_HOST,
+        port=DATABASE_PORT,
         user=DATABASE_USER,
         passwd=DATABASE_PASSWORD,
         database=DATABASE_NAME
@@ -628,6 +645,7 @@ def update_hr():
     global DEBUG_SQL
     database = mysql.connector.connect(
         host=DATABASE_HOST,
+        port=DATABASE_PORT,
         user=DATABASE_USER,
         passwd=DATABASE_PASSWORD,
         database=DATABASE_NAME
@@ -665,6 +683,7 @@ def update_spo2():
     global DEBUG_OUTPUT
     database = mysql.connector.connect(
         host=DATABASE_HOST,
+        port=DATABASE_PORT,
         user=DATABASE_USER,
         passwd=DATABASE_PASSWORD,
         database=DATABASE_NAME

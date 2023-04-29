@@ -12,9 +12,10 @@ Conduct Polygraph
         <label for="user" class="col-form-label mb-2">New User:</label>
         <input type="text" id="user" name="user" class="form-control mt-2 mr-2">
 
-        <button id="add-user" class="btn btn-success mr-2 mb-4" onclick="addUser()">Add User</button>
-
-        <button id="delete-user" class="btn btn-danger mr-2 mb-4" onclick="delUser()">Delete User</button>
+        <div class="form-group mb-2">
+            <button id="add-user" class="btn btn-success mr-2 mb-4" onclick="addUser()">Add User</button>
+            <button id="delete-user" class="btn btn-danger mr-2 mb-4" onclick="delUser()">Delete User</button>
+        </div>
 
         <label for="select-user" class="col-form-label mb-2">Select user:</label>
         <select id="select-user" class="custom-select mb-4">
@@ -32,10 +33,12 @@ Conduct Polygraph
         <input type="hidden" id="test-id" name="test-id" value="0">
 
         <!-- Test controls -->
-        <button id="add-test" class="btn btn-success mr-2 mb-4" onclick="addTest()">Add Test</button>
-        <button id="activate-test" class="btn btn-primary mr-2 mb-4" onclick="activateTest()">Activate Test</button>
-        <button id="complete-test" class="btn btn-warning mr-2 mb-4" onclick="completeTest()">Complete Test</button>
-        <button id="delete-test" class="btn btn-danger mr-2 mb-4" onclick="delTest()">Delete Test</button>
+        <div class="form-group mb-2">
+            <button id="add-test" class="btn btn-success mr-2 mb-4" onclick="addTest()">Add Test</button>
+            <button id="activate-test" class="btn btn-primary mr-2 mb-4" onclick="activateTest()">Activate Test</button>
+            <button id="complete-test" class="btn btn-warning mr-2 mb-4" onclick="completeTest()">Complete Test</button>
+            <button id="delete-test" class="btn btn-danger mr-2 mb-4" onclick="delTest()">Delete Test</button>
+        </div>
 
         <label for="select-test">Select Test:</label>
         <select id="select-test" class="custom-select mb-4">
@@ -53,10 +56,12 @@ Conduct Polygraph
         <input type="hidden" id="question-id" name="question-id" value="0">
         <input type="hidden" id="reading-active" name="reading-active" value="0">
 
-        <button id="add-question" class="btn btn-success mr-2 mb-4" onclick="addQuestion()">Add Question</button>
-        <button id="activate-question" class="btn btn-primary mr-2 mb-4" onclick="activateQuestion()">Activate Question</button>
-        <button id="reset-question" class="btn btn-warning mr-2 mb-4" onclick="resetQuestion()">Reset Question</button>
-        <button id="delete-question" class="btn btn-danger mr-2 mb-4" onclick="delQuestion()">Delete Question</button>
+        <div class="form-group mb-2">
+            <button id="add-question" class="btn btn-success mr-2 mb-4" onclick="addQuestion()">Add Question</button>
+            <button id="activate-question" class="btn btn-primary mr-2 mb-4" onclick="activateQuestion()">Activate Question</button>
+            <button id="reset-question" class="btn btn-warning mr-2 mb-4" onclick="resetQuestion()">Reset Question</button>
+            <button id="delete-question" class="btn btn-danger mr-2 mb-4" onclick="delQuestion()">Delete Question</button>
+        </div>
 
         <label for="select-test">Select Question:</label>
         <select id="select-question" class="custom-select mb-4">
@@ -81,8 +86,6 @@ Conduct Polygraph
         <canvas class="mt-10" id="gsr-chart"></canvas>
         <canvas class="mt-10" id="hr-chart"></canvas>
         <canvas class="mt-10" id="spo2-chart"></canvas>
-
-
     </div>
 
     <div id="readings" class="form-group mb-4">

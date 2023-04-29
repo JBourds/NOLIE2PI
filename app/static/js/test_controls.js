@@ -115,8 +115,8 @@ function addUser() {
                         alert("User failed to be created!");
                     }
                     // Add user to select box
-                    let user_select = document.getElementById("select-user")
-                    user_select.innerHTML += '<option value="' + response.user_id + '" selected>' + user + '</option>';
+                    let user_select = document.getElementById("select-user");
+                    user_select.innerHTML += '<option id="user-' + response.user_id + '" value="' + response.user_id + '" selected>' + user + '</option>';
                     user_select.value = response.user_id;
                     // Return their user_id
                     return response.user_id;
@@ -236,10 +236,14 @@ function addTest() {
 
 function completeTest() {
     let test_active = document.getElementById("test-active");
+    let reading_active = document.getElementById("reading-active");
 
     // Stop test, don't reset test_id hidden input as it is the last test to be ran
     if (test_active.value == 0) {
         alert("No running test!");
+        return;
+    } else if (reading_active.value == 1) {
+        alert("Readings are active! Stop readings before completing test");
         return;
     }
 

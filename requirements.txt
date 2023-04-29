@@ -1,0 +1,15 @@
+bme680==1.1.1
+Flask==2.2.3
+flask_bootstrap==3.3.7.1
+mariadb==1.0.11
+matplotlib==3.7.1
+mysql_connector_repackaged==0.3.1
+numpy==1.19.5
+Pillow==9.5.0
+pyserial==3.5b0
+rpi_vl53l0x==0.0.3
+rpi_ws281x==4.3.4
+setuptools==52.0.0
+smbus==1.1.post2
+smbus2==0.4.2
+upm==0
