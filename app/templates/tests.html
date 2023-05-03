@@ -18,8 +18,10 @@ Past Tests
         </select>
 
         <input type="hidden" id="user-id" name="user-id" value="0">
-        <button id="filter-tests" class="btn btn-primary mr-2 mb-4" onclick="filterTests()">Filter Tests for User</button>
-        <button id="remove-filter" class="btn btn-danger mr-2 mb-4" onclick="removeFilter()">Remove Test Filter</button>
+        <div class="mb-2">
+            <button id="filter-tests" class="btn btn-primary mr-2 mb-4" onclick="filterTests()">Filter Tests for User</button>
+            <button id="remove-filter" class="btn btn-danger mr-2 mb-4" onclick="removeFilter()">Remove Test Filter</button>
+        </div>
     </div>
 
     <div id="tests" class="form-group mb-4">
@@ -27,8 +29,11 @@ Past Tests
         <input type="hidden" id="test-id" name="test-id" value="0">
 
         <!-- Activate a test -->
-        <button id="activate-test" class="btn btn-primary mr-2 mb-4" onclick="viewTest()">View Test</button>
-        <button id="delete-test" class="btn btn-danger mr-2 mb-4" onclick="delPastTest()">Delete Selected Test</button>
+        <div class="mb-2">
+            <button id="activate-test" class="btn btn-primary mr-2 mb-4" onclick="viewTest()">View Test</button>
+            <button id="delete-test" class="btn btn-danger mr-2 mb-4" onclick="delPastTest()">Delete Selected Test</button>
+        </div>
+
 
         <label for="select-test">Select Test:</label>
         <select id="select-test" class="custom-select mb-4">
@@ -41,13 +46,10 @@ Past Tests
 
 
     <div id="test-question" class="form-group mb-4">
-        <label for="question" class="col-form-label">Question:</label>
-        <input type="text" id="question" name="question" class="form-control mt-2 mr-2">
         <input type="hidden" id="question-id" name="question-id" value="0">
+        <input type="hidden" id="reading-active" name="reading-active" value="0">
 
-        <button id="activate-question" class="btn btn-primary mr-2 mb-4" onclick="activateQuestion()">Activate Question</button>
-
-        <label for="select-test">Select Question:</label>
+        <label for="select-question">Select Question:</label>
         <select id="select-question" class="custom-select mb-4">
             <option id="default-question" value="0" selected>Open this select menu</option>
             {%  for question_id, question_data in questions.items() %}
@@ -55,8 +57,10 @@ Past Tests
             {% endfor %}
         </select>
 
-        <!-- Button to view a question's reading -->
-        <button id="view-reading" class="btn btn-warning mr-2 mb-4" onclick="viewPastQuestionReading()">View Question Reading</button>
+        <div class="mb-2">
+            <!-- Button to view a question's reading -->
+            <button id="view-reading" class="btn btn-warning mr-2 mb-4" onclick="viewHistoricalQuestionReading()">View Question Reading</button>
+        </div>
 
     </div>
 

@@ -1,25 +1,44 @@
 {% extends "base.html" %}
+
 {% block title %}
 Home Page
 {% endblock %}
+
 {% block content %}
-<section>
-    <h1>Home</h1>
+<section class="container">
+    <div class="row">
+        <div class="mx-auto">
+            <h1 class="mt-5 text-center">Home</h1>
 
-    <h2>About the Project</h2>
-    <p>This project was created for CS121B (Computer Organization) at the University of Vermont. It leverages multiple technology stacks including the following:</p>
-    <ul>
-        <li>Raspberry Pi running a LAMP stack</li>
-        <li>Grove Seeed Studio GSR (Galvanic Skin Response) and MAX30102 Pulse Oximeter Sensors</li>
-        <li>Bootstrapped Flask app providing the web interface to control and visualize data from the sensors</li>
-    </ul>
-    <p>The project allows you to run "Tests" on users where you can ask them multiple questions and associate the questions with the set of readings produced by the sensors while providing live graphs/tables to show the sensor data. It also provides the ability to look back at previous tests and view the patterns of sensor data. Essentially, the Raspberry Pi is able to act as a polygraph machine.</p>
+            <div class="mb-4">
+                <h2>About the Project</h2>
+                <p>This project was created for CS121B (Computer Organization) at the University of Vermont. It leverages multiple technology stacks including the following:</p>
+                <ul>
+                    <li>Raspberry Pi running a LAMP stack</li>
+                    <li>Grove Seeed Studio GSR (Galvanic Skin Response) and MAX30102 Pulse Oximeter Sensors</li>
+                    <li>Bootstrapped Flask app providing the web interface to control and visualize data from the sensors</li>
+                </ul>
+                <p>The project allows you to run "Tests" on users where you can ask them multiple questions and associate the questions with the set of readings produced by the sensors while providing live graphs/tables to show the sensor data. It also provides the ability to look back at previous tests and view the patterns of sensor data. Essentially, the Raspberry Pi is able to act as a polygraph machine.</p>
+            </div>
 
-    <h2>Future Work</h2>
-    <p>Currently, the project is using sensors that are not medical grade. Future work may involve either improving data collection techniques to avoid erroneous readings (particularly using the MAX30102) and improve the ability to distinguish from noise in the readings.</p>
-    <p>Another potential for further development would involve implementing a binary classification machine learning model to automatically determine whether a question is marked as a Pass/Fail whether than the test administrator doing so.</p>
+            <div class="mb-4">
+                <h2>Demo:</h2>
+                <img src="{{ url_for('static', filename='img/setup.jpeg') }}" class="img-fluid">
+            </div>
 
-    <h2>About the Creator</h2>
-    <p>This project was created by Jordan Bourdeau as a sophomore computer/data science double major at the University of Vermont.</p>
+            <div class="mb-4">
+                <h2>Future Work</h2>
+                <p>Currently, the project is using sensors that are not medical grade. Future work may involve either improving data collection techniques to avoid erroneous readings (particularly using the MAX30102) and improve the ability to distinguish from noise in the readings.</p>
+                <p>Another potential for further development would involve implementing a binary classification machine learning model to automatically determine whether a question is marked as a Pass/Fail whether than the test administrator doing so.</p>
+            </div>
+
+            <div class="mb-4">
+                <h2>About the Creator</h2>
+                <p>This project was created by Jordan Bourdeau as a sophomore computer/data science double major at the University of Vermont.</p>
+                <a href="https://github.com/JBourds">Check out my GitHub!</a>
+            </div>
+
+        </div>
+    </div>
 </section>
 {% endblock %}

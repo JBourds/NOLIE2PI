@@ -5,6 +5,9 @@ This project uses code taken from the following repositories. All credit for the
     - GSR Sensor: https://github.com/Seeed-Studio/grove.py
     - MAX30102 Sensor: https://github.com/doug-burrell/max30102 and originally https://github.com/vrano714/max30102-tutorial-raspberrypi
 
+## Demonstration Video
+https://www.youtube.com/watch?v=LBQNEgR-zzg&ab_channel=JordanBourdeau
+
 ## Required Materials:
     - Raspberry Pi (Model 4 used originally)
         - Charging cable

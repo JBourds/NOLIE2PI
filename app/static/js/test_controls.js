@@ -1,23 +1,20 @@
 function startTestReadings() {
     let test_active = document.getElementById("test-active").value;
     let question_id = document.getElementById("question-id").value;
+    let selected_question_id = document.getElementById("select-question").value;
     let reading_active = document.getElementById("reading-active");
 
-    // Verify there is a running test
     if (test_active == 0) {
         alert("No test to start readings for!");
         return;
-    }
-
-    // Check if there is an active question
-    if (question_id == 0) {
+    } else if (question_id == 0) {
         alert("No active question to start readings for!");
         return;
-    }
-
-    // Check if the readings are already active
-    if (reading_active.value == 1) {
+    } else if (reading_active.value == 1) {
         alert("Readings are already active!");
+        return;
+    } else if (selected_question_id != question_id) {
+        alert("Can only start readings for the active question! Make sure active question is selected!");
         return;
     }
 
@@ -38,23 +35,21 @@ function startTestReadings() {
 function stopTestReadings() {
     let test_active = document.getElementById("test-active").value;
     let question_id = document.getElementById("question-id").value;
+    let selected_question_id = document.getElementById("select-question").value;
     let reading_active = document.getElementById("reading-active");
 
     // Verify there is a running test
     if (test_active == 0) {
         alert("No test to stop readings for!");
         return;
-    }
-
-    // Check if there is an active question
-    if (question_id == 0) {
+    } else if (question_id == 0) {
         alert("No active question to stop readings for!");
         return;
-    }
-
-    // Check if the readings are already inactive
-    if (reading_active.value == 0) {
+    } else if (reading_active.value == 0) {
         alert("Readings are already inactive!");
+        return;
+    } else if (selected_question_id != question_id) {
+        alert("Can only stop readings for the active question! Make sure active question is selected!");
         return;
     }
 
@@ -75,16 +70,23 @@ function stopTestReadings() {
 
 // Allows you to reset the graph to only display data for the given question
 function viewQuestionReading() {
-    let test_active = document.getElementById("test-active").value;
     let selected_question = document.getElementById("select-question").value;
-    let question_id = document.getElementById("question-id");
-    let reading_active = document.getElementById("reading-active").value;
+    let question_id = document.getElementById("question-id").value;
 
     if (!validateQuestion()) {
         return;
+    } else if (selected_question != question_id) {
+        alert("Can only view readings for active question! Make sure selected question is the active question!");
+        return;
     }
 
-    question_id.value = selected_question;
+    displayPastQuestionData();
+}
+
+// Used in past tests page
+function viewHistoricalQuestionReading() {
+    let selected_question_id = document.getElementById("select-question").value;
+    document.getElementById("question-id").value = selected_question_id;
     displayPastQuestionData();
 }
 
@@ -258,6 +260,12 @@ function completeTest() {
     // Change selected option to default test
     document.getElementById("default-test").selected = true;
 
+    // Deactivate current question if there is an active one
+    let current_question_id =  document.getElementById("question-id");
+    if (current_question_id.value != 0) {
+        deactivateQuestion();
+    }
+
     hideQuestions();
 }
 
@@ -334,7 +342,10 @@ function delTest() {
 // Function to hide all questions from a test
 function hideQuestions() {
     // Clear out current question box text
-    document.getElementById("question").value = "";
+    // Check if it is null for past tests page
+    if (document.getElementById("question") != null) {
+        document.getElementById("question").value = "";
+    }
 
     // Set select box option to the default
     document.getElementById("select-question").value = 0;
@@ -370,7 +381,10 @@ function showTestQuestions() {
     }
 
     // Clear out current question box text
-    document.getElementById("question").value = "";
+    // Check if it is null because of past tests page
+    if (document.getElementById("question") != null) {
+        document.getElementById("question").value = "";
+    }
 
     // Set select box option to the default
     document.getElementById("select-question").value = 0;
@@ -472,11 +486,16 @@ function addQuestion() {
 
 function delQuestion() {
     let test_id = document.getElementById("test-id").value;
-    let question_id = document.getElementById("select-question").value;
+    let selected_question_id = document.getElementById("select-question").value;
+    let active_question_id = document.getElementById("question-id").value;
 
     if (!validateQuestion()) {
         return;
+    } else if (selected_question_id != active_question_id) {
+        alert("Selected question must also be the active question in order to delete it!");
+        return;
     }
+    deactivateQuestion();
 
     try {
         // Send request to delete the question
@@ -496,12 +515,12 @@ function delQuestion() {
                     alert("Error: Extra questions were deleted!");
                 }
                 // Remove question from select box
-                let question_option = document.getElementById("test-" + test_id + "-question-" + question_id);
+                let question_option = document.getElementById("test-" + test_id + "-question-" + selected_question_id);
                 question_option.remove();
                 return;
             }
         };
-        xhr.send(JSON.stringify({question_id: question_id}));
+        xhr.send(JSON.stringify({question_id: selected_question_id}));
     } catch (e) {
         alert(e);
     }
@@ -513,7 +532,7 @@ function activateQuestion() {
     // the select-question input
     let test_active = document.getElementById("test-active").value;
     let test_id = document.getElementById("test-id").value;
-    let question_id = document.getElementById("select-question").value;
+    let selected_question_id = document.getElementById("select-question").value;
     let reading_active = document.getElementById("reading-active").value;
 
     // Check for inactive test
@@ -528,7 +547,7 @@ function activateQuestion() {
     }
 
     // Check for lack of question
-    if (question_id == 0) {
+    if (selected_question_id == 0) {
         alert("No question selected!");
         return false;
     }
@@ -540,8 +559,13 @@ function activateQuestion() {
     }
 
     let current_question =  document.getElementById("question-id");
-    let old_question_id = current_question.value;
     let new_question = document.getElementById("select-question");
+
+    if (current_question.value == new_question.value) {
+        return;
+    } else if (current_question.value != 0) {
+        deactivateQuestion();
+    }
 
     // Update question ID to the selected question ID
     current_question.value = new_question.value
@@ -549,13 +573,29 @@ function activateQuestion() {
     // Add "(Active)" to selected question
     document.getElementById("test-" + test_id + "-question-" + new_question.value).textContent += " (Active)";
 
-    // Remove "(Active)" from old question
-    let old_question = document.getElementById("test-" + test_id + "-question-" + old_question_id);
-    if (old_question != null) {
-        old_question.textContent = old_question.textContent.replace(" (Active)", "");
+    resetCharts();
+    viewQuestionReading();
+}
+
+function deactivateQuestion() {
+    let active_test = document.getElementById("test-id");
+    let active_question_id = document.getElementById("question-id");
+    let active_question = document.getElementById("test-" + active_test.value + "-question-" + active_question_id.value);
+
+    if (active_test.value == 0) {
+        alert("No active test!");
+        return;
+    } else if (active_question_id.value == 0) {
+        alert("No active question!");
+        return;
     }
 
-    resetCharts();
+    // Remove " (Active)" from question text content
+    active_question.textContent = active_question.textContent.replace(" (Active)", "");
+
+    // Reset active_question_id to 0
+    active_question_id.value = 0;
+
 }
 
 // Reset all the readings associated with the question
@@ -565,6 +605,12 @@ function resetQuestion() {
     }
 
     let question_id =  document.getElementById("question-id").value;
+    let selected_question_id = document.getElementById("select-question").value;
+
+    if (selected_question_id != question_id) {
+        alert("Selected question must also be the active question in order to clear readings!");
+        return;
+    }
 
     try {
         let xhr = new XMLHttpRequest();

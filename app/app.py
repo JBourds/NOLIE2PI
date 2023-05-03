@@ -102,7 +102,7 @@ def fetch_test_data(test_date=None, date_ordering="DESC", name_ordering="ASC"):
     for test_record in test_records:
         tests[test_record[0]] = {
             "name": test_record[1],
-            "date": test_record[2].strftime("%m-%d-%Y"),
+            "date": test_record[2].strftime("%Y-%m-%d"),
             "user_id": test_record[3]
         }
 
@@ -165,8 +165,9 @@ def start_reading():
             red, ir = max30102_sensor.read_sequential()
             hr, hr_valid, spo2, spo2_valid = hrcalc.calc_hr_and_spo2(ir, red, 200, 80)
 
-            print(f"HR Data: {hr}, Valid: {hr_valid}")
-            print(f"SPO2 Data: {spo2}, Valid: {spo2_valid}")
+            if DEBUG_OUTPUT:
+                print(f"HR Data: {hr}, Valid: {hr_valid}")
+                print(f"SPO2 Data: {spo2}, Valid: {spo2_valid}")
 
             # Only insert values if they are deemed valid
             if hr_valid:

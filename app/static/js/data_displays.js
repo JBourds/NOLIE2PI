@@ -60,9 +60,9 @@ function resetCharts() {
     var hr_cht = document.getElementById("hr-chart").getContext('2d');
     var spo2_cht = document.getElementById("spo2-chart").getContext('2d');
 
-    gsr_cht.clearRect(0, 0, gsr_cht.canvas.width, gsr_cht.canvas.height);
-    hr_cht.clearRect(0, 0, hr_cht.canvas.width, hr_cht.canvas.height);
-    spo2_cht.clearRect(0, 0, spo2_cht.canvas.width, spo2_cht.canvas.height);
+    gsr_chart.destroy();
+    hr_chart.destroy();
+    spo2_chart.destroy();
 
     create_gsr_chart(gsr_cht)
     create_hr_chart(hr_cht);
